@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book } from 'lucide-react';
 import { Simulator } from './lib/simulator';
 import { usePWAInstall } from './hooks/usePWAInstall';
+import { DocViewer } from './components/DocViewer';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -61,6 +62,7 @@ export default function App() {
   const [demoRunning, setDemoRunning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadAddr, setUploadAddr] = useState('00018000'); // TCMA
+  const [showDocs, setShowDocs] = useState(false);
 
   useEffect(() => {
     sim.onStateChange = () => setTick(t => t + 1);
@@ -185,13 +187,31 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-300 font-mono flex flex-col">
+      {showDocs && <DocViewer onClose={() => setShowDocs(false)} />}
       <header className="border-b border-slate-800 bg-slate-900/50 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="text-blue-500 w-6 h-6" />
-          <h1 className="text-lg font-bold text-slate-100">AWRL6844 Simulator Engine</h1>
+          <h1 className="text-lg font-bold text-slate-100">{sim.mmu.socType} Simulator Engine</h1>
+          <button 
+            onClick={() => setShowDocs(true)}
+            className="flex items-center gap-2 ml-4 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
+          >
+            <Book className="w-3.5 h-3.5" />
+            Documentation
+          </button>
           <PWAInstallButton />
         </div>
         <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <select
+              value={sim.mmu.socType}
+              onChange={(e) => sim.mmu.configureForSoC(e.target.value as 'AWRL6844' | 'AWRL6888')}
+              className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs font-semibold outline-none focus:border-indigo-500"
+            >
+              <option value="AWRL6844">AWRL6844 (4T4R)</option>
+              <option value="AWRL6888">AWRL6888 (8T8R)</option>
+            </select>
+          </div>
           <div className="flex items-center gap-2">
             <Zap className={`w-4 h-4 ${sim.prcm.state === 'Active' ? 'text-yellow-400' : 'text-slate-500'}`} />
             <span>Power: {sim.prcm.powerConsumption} mW</span>
@@ -261,6 +281,25 @@ export default function App() {
               {!demoRunning && <Play className="w-4 h-4" />}
             </button>
           </section>
+
+          {sim.mmu.socType === 'AWRL6888' && (
+            <section>
+              <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Send className="w-4 h-4" /> 8T8R Transceiver
+              </h2>
+              <div className="space-y-2">
+                <button onClick={() => sim.mmu.writeWord(0x56060000, 0xFFFF)} className="w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm transition-colors">
+                  Enable All (64 Virtual Antennas)
+                </button>
+                <button onClick={() => sim.mmu.writeWord(0x56060000, 0x0F0F)} className="w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm transition-colors">
+                  Fallback 4T4R Mode
+                </button>
+                <button onClick={() => sim.mmu.writeWord(0x56060000, 0x01FF)} className="w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm transition-colors">
+                  Enable All RX, 1 TX (No MIMO)
+                </button>
+              </div>
+            </section>
+          )}
 
           <section>
             <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
@@ -384,6 +423,23 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+                  {sim.mmu.socType === 'AWRL6888' && (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">APP_CTRL: Transceiver (0x56060000)</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                          <div className="text-slate-500 text-xs">ACTIVE V-ANTENNAS</div>
+                          <div className="font-mono text-pink-400">{sim.transceiver.virtualAntennas}</div>
+                        </div>
+                        <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                          <div className="text-slate-500 text-xs">MASKS (TX/RX)</div>
+                          <div className="font-mono text-cyan-400">
+                            0x{sim.transceiver.txMask.toString(16).toUpperCase().padStart(2, '0')}/0x{sim.transceiver.rxMask.toString(16).toUpperCase().padStart(2, '0')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

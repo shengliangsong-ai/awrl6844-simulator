@@ -17,14 +17,35 @@ export type LogEntry = {
 
 export class VirtualMMU {
   regions: MemoryRegion[] = [];
+  socType: 'AWRL6844' | 'AWRL6888' = 'AWRL6844';
+
   constructor(private sim: Simulator) {
-    this.regions = [
-      { name: 'APP_R5F_TCMA', base: 0x00018000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
-      { name: 'APP_R5F_TCMB', base: 0x08000000, size: 256 * 1024, data: new Uint8Array(256 * 1024) },
-      { name: 'DSS_L2', base: 0x80800000, size: 384 * 1024, data: new Uint8Array(384 * 1024) },
-      { name: 'DSS_L3_NATIVE', base: 0x88000000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
-      { name: 'EXT_FLASH', base: 0x70000000, size: 32 * 1024 * 1024, data: new Uint8Array(32 * 1024 * 1024) },
-    ];
+    this.configureForSoC('AWRL6844');
+  }
+
+  configureForSoC(type: 'AWRL6844' | 'AWRL6888') {
+    this.socType = type;
+    if (type === 'AWRL6888') {
+      this.regions = [
+        { name: 'APP_R5F_TCMA', base: 0x00018000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
+        { name: 'APP_R5F_TCMB', base: 0x08000000, size: 256 * 1024, data: new Uint8Array(256 * 1024) },
+        { name: 'DSS_L2', base: 0x80800000, size: 384 * 1024, data: new Uint8Array(384 * 1024) },
+        { name: 'DSS_L3_NATIVE', base: 0x88000000, size: 1.4 * 1024 * 1024, data: new Uint8Array(1.4 * 1024 * 1024) },
+        { name: 'EXT_FLASH', base: 0x70000000, size: 32 * 1024 * 1024, data: new Uint8Array(32 * 1024 * 1024) },
+        // 8x8 Transceiver Control Registers for AWRL6888
+        { name: 'APP_CTRL', base: 0x56060000, size: 4096, data: new Uint8Array(4096) }
+      ];
+      this.sim.log('MMU', 'Reconfigured memory regions for AWRL6888 (8T8R, 1.4MB L3 RAM)', 'info');
+    } else {
+      this.regions = [
+        { name: 'APP_R5F_TCMA', base: 0x00018000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
+        { name: 'APP_R5F_TCMB', base: 0x08000000, size: 256 * 1024, data: new Uint8Array(256 * 1024) },
+        { name: 'DSS_L2', base: 0x80800000, size: 384 * 1024, data: new Uint8Array(384 * 1024) },
+        { name: 'DSS_L3_NATIVE', base: 0x88000000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
+        { name: 'EXT_FLASH', base: 0x70000000, size: 32 * 1024 * 1024, data: new Uint8Array(32 * 1024 * 1024) },
+      ];
+      this.sim.log('MMU', 'Reconfigured memory regions for AWRL6844 (4T4R)', 'info');
+    }
   }
 
   getRegion(addr: number) {
@@ -53,6 +74,12 @@ export class VirtualMMU {
     if (addr >= 0x5A040000 && addr <= 0x5A040010) {
       this.sim.prcm.handleWrite(addr, val);
       return;
+    }
+
+    // Trap APP_CTRL Registers for Transceiver Configuration (AWRL6888)
+    if (this.socType === 'AWRL6888' && addr >= 0x56060000 && addr <= 0x56060FFF) {
+      this.sim.transceiver.handleWrite(addr, val);
+      // Fallthrough to actually write to the memory region
     }
 
     const region = this.getRegion(addr);
@@ -226,18 +253,66 @@ export class PRCMController {
   }
 }
 
-export class Simulator {
-  mmu = new VirtualMMU(this);
-  ipc = new MailboxIPC(this);
-  edma = new EDMAValidator(this);
-  prcm = new PRCMController(this);
+export class Transceiver8x8 {
+  rxMask = 0;
+  txMask = 0;
+  virtualAntennas = 0;
+  active = false;
 
+  constructor(private sim: Simulator) {}
+
+  handleWrite(addr: number, val: number) {
+    if (addr === 0x56060000) { // channelCfg 
+      // Simulate bit parsing: lower 8 bits RX, next 8 bits TX
+      this.rxMask = val & 0xFF;
+      this.txMask = (val >> 8) & 0xFF;
+      
+      const rxCount = this.countBits(this.rxMask);
+      const txCount = this.countBits(this.txMask);
+      
+      this.virtualAntennas = rxCount * txCount;
+      
+      this.sim.log('TRANSCEIVER', `Channel Mask Configured: RX=0x${this.rxMask.toString(16).toUpperCase()} (${rxCount} Active), TX=0x${this.txMask.toString(16).toUpperCase()} (${txCount} Active).`);
+      
+      if (this.virtualAntennas > 0 && txCount < 2) {
+         this.sim.log('TRANSCEIVER', 'MIMO Warning: Less than 2 Transmitters active.', 'warn');
+      }
+      
+      this.sim.log('TRANSCEIVER', `Virtual Antennas Calculated: ${this.virtualAntennas}`);
+      this.sim.notify();
+    }
+  }
+
+  private countBits(n: number) {
+    let count = 0;
+    while (n) {
+      count += n & 1;
+      n >>= 1;
+    }
+    return count;
+  }
+}
+
+export class Simulator {
   logs: LogEntry[] = [];
   onStateChange?: () => void;
   private logIdCounter = 0;
 
+  mmu: VirtualMMU;
+  ipc: MailboxIPC;
+  edma: EDMAValidator;
+  prcm: PRCMController;
+  transceiver: Transceiver8x8;
+
   constructor() {
-    this.log('SYSTEM', 'AWRL6844 Simulator Engine Booted');
+    // Initialize properties that depend on Simulator passing `this` to them
+    this.mmu = new VirtualMMU(this);
+    this.ipc = new MailboxIPC(this);
+    this.edma = new EDMAValidator(this);
+    this.prcm = new PRCMController(this);
+    this.transceiver = new Transceiver8x8(this);
+
+    this.log('SYSTEM', 'Simulator Engine Booted');
   }
 
   log(prefix: string, message: string, level: 'info' | 'warn' | 'error' = 'info') {
