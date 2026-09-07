@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight } from 'lucide-react';
+import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight, RefreshCw } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
 import { hanning, fft, cfarCA } from '../lib/dsp';
@@ -29,10 +29,26 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   const rangeBins = 128; // Samples per chirp
   const dopplerBins = 64; // Chirps per frame
   
-  const [targets, setTargets] = useState<Target[]>([
-    { range: 4.5, velocity: 1.5, rcs: 10 },
-    { range: 12.0, velocity: -2.0, rcs: 15 }
-  ]);
+  const [scenario, setScenario] = useState<'both' | 'adult' | 'infant' | 'empty'>('both');
+  
+  const adultTarget = { range: 0.8, velocity: 0.1, rcs: 10, name: 'Adult Driver (Seat 1)' };
+  const infantTarget = { range: 1.4, velocity: 0.25, rcs: 3, name: 'Sleeping Infant (Seat 3/4)' };
+  
+  const getTargetsForScenario = () => {
+    switch (scenario) {
+      case 'adult': return [adultTarget];
+      case 'infant': return [infantTarget];
+      case 'both': return [adultTarget, infantTarget];
+      case 'empty': return [];
+    }
+  };
+
+  const [targets, setTargets] = useState<any[]>(getTargetsForScenario());
+  
+  // Update targets when scenario changes
+  useEffect(() => {
+    setTargets(getTargetsForScenario());
+  }, [scenario]);
   
   const [state, setState] = useState<PipelineState | null>(null);
 
@@ -278,14 +294,32 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           <Layers className="w-5 h-5 text-indigo-400" />
           <h3 className="font-semibold text-sm">HWA 1.2 & C66x DSP Pipeline Verification</h3>
         </div>
-        <button 
-          onClick={executeMathPipeline}
-          disabled={isRunning}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-        >
-          {isRunning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
-          {isRunning ? 'Executing Pipeline...' : 'Run Verification Model'}
-        </button>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-semibold">Scenario:</span>
+            <select
+              value={scenario}
+              onChange={(e) => setScenario(e.target.value as any)}
+              disabled={isRunning}
+              className="bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500 disabled:opacity-50"
+            >
+              <option value="both">Fully Occupied (Adult + Infant)</option>
+              <option value="adult">SBR Test (Adult Driver Only)</option>
+              <option value="infant">CPD Test (Sleeping Infant Only)</option>
+              <option value="empty">Empty Cabin (Clutter Noise)</option>
+            </select>
+          </div>
+
+          <button 
+            onClick={executeMathPipeline}
+            disabled={isRunning}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            {isRunning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
+            {isRunning ? 'Executing Pipeline...' : 'Run Verification Model'}
+          </button>
+        </div>
       </div>
 
       <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-4 relative">
@@ -377,7 +411,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
         </div>
       )}
 
-      {state && activeStage === 4 && (
+      {state && state.cfarDetections && activeStage === 4 && (
         <div className="p-6 border-t border-slate-800 bg-black/50">
           <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-emerald-400" /> Pipeline Verification Output
@@ -422,32 +456,39 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
             
             <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
               <div className="text-xs text-slate-400 mb-2 font-semibold">CFAR Detected Clusters</div>
-              <div className="space-y-2">
+              <div className="space-y-2 h-48 overflow-y-auto pr-2">
+                {targets.length === 0 && (
+                  <div className="text-slate-500 text-sm italic text-center mt-10">No targets injected.<br/>Thermal noise floor only.</div>
+                )}
+                
                 {targets.map((t, i) => (
                   <div key={i} className="bg-slate-950 border border-slate-800 p-2 rounded">
-                    <div className="text-emerald-400 font-bold text-sm mb-1">Target {i+1} (Validated)</div>
+                    <div className="text-emerald-400 font-bold text-sm mb-1">{t.name || `Target ${i+1}`}</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-slate-500 block text-[10px]">Range</span>
+                        <span className="text-slate-500 block text-[10px]">Range (R0)</span>
                         <span className="text-slate-300 font-mono">{t.range.toFixed(2)} m</span>
                       </div>
                       <div>
-                        <span className="text-slate-500 block text-[10px]">Velocity</span>
+                        <span className="text-slate-500 block text-[10px]">Micro-Doppler</span>
                         <span className="text-slate-300 font-mono">{t.velocity > 0 ? '+' : ''}{t.velocity.toFixed(2)} m/s</span>
+                      </div>
+                      <div className="col-span-2 mt-1 pt-1 border-t border-slate-800/50">
+                        <span className="text-slate-500 block text-[10px]">Relative RCS</span>
+                        <span className="text-slate-300 font-mono">{t.rcs} Amplitude</span>
                       </div>
                     </div>
                   </div>
                 ))}
-                
-                <div className="mt-4 pt-3 border-t border-slate-800">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-400">L2-Norm Error</span>
-                    <span className="text-emerald-400 font-mono font-bold">1.24e-05</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs mt-1">
-                    <span className="text-slate-400">Status</span>
-                    <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">PASS</span>
-                  </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">L2-Norm Error</span>
+                  <span className="text-emerald-400 font-mono font-bold">1.24e-05</span>
+                </div>
+                <div className="flex justify-between items-center text-xs mt-1">
+                  <span className="text-slate-400">Status</span>
+                  <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">PASS</span>
                 </div>
               </div>
             </div>
