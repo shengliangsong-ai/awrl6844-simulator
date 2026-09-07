@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight, RefreshCw, User, Baby, Car } from 'lucide-react';
+import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight, RefreshCw, User, Baby, Car, Box } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
 import { hanning, fft, cfarCA } from '../lib/dsp';
+import { Cabin3DView } from './Cabin3DView';
 
 interface Target {
   range: number;
@@ -36,17 +37,17 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   
   const getTargetsForConfiguration = (config: SeatConfig) => {
     const t = [];
-    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 10, name: 'Adult (Front Left)' });
-    if (config.FL === 'infant') t.push({ range: 0.8, velocity: 0.35, rcs: 3, name: 'Infant (Front Left)' });
+    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 10, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
+    if (config.FL === 'infant') t.push({ range: 0.8, velocity: 0.35, rcs: 3, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.8] });
     
-    if (config.FR === 'adult') t.push({ range: 0.9, velocity: 0.12, rcs: 10, name: 'Adult (Front Right)' });
-    if (config.FR === 'infant') t.push({ range: 0.9, velocity: 0.32, rcs: 3, name: 'Infant (Front Right)' });
+    if (config.FR === 'adult') t.push({ range: 0.9, velocity: 0.12, rcs: 10, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.8] });
+    if (config.FR === 'infant') t.push({ range: 0.9, velocity: 0.32, rcs: 3, name: 'Infant (Front Right)', pos: [0.35, -0.4, 0.8] });
     
-    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 10, name: 'Adult (Back Left)' });
-    if (config.BL === 'infant') t.push({ range: 1.4, velocity: 0.38, rcs: 3, name: 'Infant (Back Left)' });
+    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 10, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
+    if (config.BL === 'infant') t.push({ range: 1.4, velocity: 0.38, rcs: 3, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.4] });
     
-    if (config.BR === 'adult') t.push({ range: 1.5, velocity: 0.14, rcs: 10, name: 'Adult (Back Right)' });
-    if (config.BR === 'infant') t.push({ range: 1.5, velocity: 0.34, rcs: 3, name: 'Infant (Back Right)' });
+    if (config.BR === 'adult') t.push({ range: 1.5, velocity: 0.14, rcs: 10, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.4] });
+    if (config.BR === 'infant') t.push({ range: 1.5, velocity: 0.34, rcs: 3, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.4] });
     return t;
   };
 
@@ -447,44 +448,14 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <div className="text-xs text-slate-400 mb-2 font-semibold">Simulated Range-Doppler Heatmap</div>
-              <div className="h-48 bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 rounded border border-slate-800 relative overflow-hidden">
-                 {/* Mock heatmap visual */}
-                 <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
-                 
-                 {state.cfarDetections.map((det, i) => (
-                   <div 
-                     key={i}
-                     className="absolute w-4 h-4 bg-red-500 rounded-full animate-ping"
-                     style={{
-                       left: `${(det.d / 64) * 100}%`,
-                       top: `${100 - (det.r / 128) * 100}%`,
-                       transform: 'translate(-50%, -50%)'
-                     }}
-                   />
-                 ))}
-                 {state.cfarDetections.map((det, i) => (
-                   <div 
-                     key={`static-${i}`}
-                     className="absolute w-2 h-2 bg-red-400 rounded-full shadow-[0_0_10px_rgba(248,113,113,1)]"
-                     style={{
-                       left: `${(det.d / 64) * 100}%`,
-                       top: `${100 - (det.r / 128) * 100}%`,
-                       transform: 'translate(-50%, -50%)'
-                     }}
-                   />
-                 ))}
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                 <span>-Velocity</span>
-                 <span>Doppler (Velocity)</span>
-                 <span>+Velocity</span>
+              <div className="h-[22rem] rounded border border-slate-800 relative overflow-hidden">
+                <Cabin3DView targets={targets} />
               </div>
             </div>
             
             <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
               <div className="text-xs text-slate-400 mb-2 font-semibold">Object Classification & Tracking</div>
-              <div className="space-y-3 h-48 overflow-y-auto pr-2">
+              <div className="space-y-3 h-[18rem] overflow-y-auto pr-2">
                 {targets.length === 0 && (
                   <div className="text-slate-500 text-sm italic text-center mt-10">
                     <Car className="w-8 h-8 mx-auto mb-2 opacity-20" />
