@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity } from 'lucide-react';
 import { Simulator } from './lib/simulator';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { DocViewer } from './components/DocViewer';
@@ -62,6 +62,8 @@ export default function App() {
   const [demoRunning, setDemoRunning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadAddr, setUploadAddr] = useState('00018000'); // TCMA
+  const [writeMemAddr, setWriteMemAddr] = useState('');
+  const [writeMemVal, setWriteMemVal] = useState('');
   const [showDocs, setShowDocs] = useState(false);
 
   useEffect(() => {
@@ -146,6 +148,20 @@ export default function App() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleWriteMemory = () => {
+    const addr = parseInt(writeMemAddr, 16);
+    const val = parseInt(writeMemVal, 16);
+    if (!isNaN(addr) && !isNaN(val)) {
+      try {
+        sim.mmu.writeWord(addr, val);
+        sim.log('UI', `Manual write to 0x${addr.toString(16).toUpperCase()}: 0x${val.toString(16).toUpperCase()}`, 'info');
+        setInspectAddr(writeMemAddr); // auto-inspect the location we just wrote to
+      } catch (err: any) {
+        sim.log('UI', `Manual write failed: ${err.message}`, 'error');
+      }
+    }
+  };
+
   const renderMemory = () => {
     const baseAddr = parseInt(inspectAddr, 16);
     if (isNaN(baseAddr)) return <div className="text-red-400 p-2">Invalid Hex Address</div>;
@@ -166,12 +182,19 @@ export default function App() {
       }
       
       const words = [];
+      const asciiChars = [];
       for (let j = 0; j < 4; j++) {
          try {
            const val = sim.mmu.readWord(rowAddr + j * 4);
            words.push(val.toString(16).padStart(8, '0').toUpperCase());
+           
+           for (let b = 0; b < 4; b++) {
+             const byte = (val >> (b * 8)) & 0xFF;
+             asciiChars.push((byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : '.');
+           }
          } catch {
            words.push('????????');
+           asciiChars.push('....');
          }
       }
       
@@ -179,6 +202,7 @@ export default function App() {
          <div key={i} className="flex gap-6 text-slate-300 mb-1">
              <span className="text-slate-500 font-bold">0x{rowAddr.toString(16).toUpperCase().padStart(8, '0')}</span>
              <span className="text-emerald-300 tracking-widest">{words.join('  ')}</span>
+             <span className="text-slate-400 font-mono tracking-wider ml-auto bg-slate-900 px-2 rounded hidden md:block">{asciiChars.join('')}</span>
          </div>
       );
     }
@@ -264,6 +288,47 @@ export default function App() {
               >
                 <Upload className="w-3.5 h-3.5" />
                 Select .BIN / .HEX File
+              </button>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+              <Edit3 className="w-4 h-4" /> Manual Memory Write
+            </h2>
+            <div className="bg-slate-800/50 border border-slate-700 p-3 rounded flex flex-col gap-3 text-xs">
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-400">Address (Hex)</label>
+                <div className="flex bg-slate-900 border border-slate-700 rounded overflow-hidden">
+                  <span className="px-2 py-1.5 bg-slate-800 text-slate-500 border-r border-slate-700">0x</span>
+                  <input 
+                    type="text" 
+                    value={writeMemAddr}
+                    onChange={(e) => setWriteMemAddr(e.target.value)}
+                    className="bg-transparent flex-1 px-2 text-slate-300 outline-none"
+                    placeholder="5A040000"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-400">Value (32-bit Hex)</label>
+                <div className="flex bg-slate-900 border border-slate-700 rounded overflow-hidden">
+                  <span className="px-2 py-1.5 bg-slate-800 text-slate-500 border-r border-slate-700">0x</span>
+                  <input 
+                    type="text" 
+                    value={writeMemVal}
+                    onChange={(e) => setWriteMemVal(e.target.value)}
+                    className="bg-transparent flex-1 px-2 text-slate-300 outline-none"
+                    placeholder="00000001"
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={handleWriteMemory}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 rounded text-white transition-colors flex items-center justify-center gap-2 font-semibold"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Execute Write
               </button>
             </div>
           </section>
@@ -442,6 +507,61 @@ export default function App() {
                   )}
                 </div>
               </div>
+
+              {sim.mmu.socType === 'AWRL6888' && (
+                <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
+                  <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center gap-2">
+                     <Activity className="w-4 h-4 text-cyan-400" />
+                     <h3 className="font-semibold text-sm">8T8R MIMO Virtual Antenna Array Visualization</h3>
+                  </div>
+                  <div className="p-4 flex flex-col sm:flex-row items-center justify-center gap-8 bg-slate-950">
+                     
+                     <div className="flex flex-col gap-2">
+                       <div className="text-xs text-slate-500 font-semibold mb-1 text-center">RX Channels (Cols)</div>
+                       <div className="flex">
+                         <div className="text-xs text-slate-500 font-semibold mr-4 flex items-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                           TX Channels (Rows)
+                         </div>
+                         <div className="grid grid-cols-8 gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800 shadow-inner">
+                            {Array.from({length: 8}).map((_, tx) => 
+                               Array.from({length: 8}).map((_, rx) => {
+                                  const txActive = (sim.transceiver.txMask & (1 << tx)) !== 0;
+                                  const rxActive = (sim.transceiver.rxMask & (1 << rx)) !== 0;
+                                  const isActive = txActive && rxActive;
+                                  
+                                  return (
+                                    <div 
+                                      key={`${tx}-${rx}`} 
+                                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded ${isActive ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-slate-800 opacity-30'} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white/70 transition-all duration-300`}
+                                      title={`TX${tx}, RX${rx}`}
+                                    >
+                                       {isActive ? `V${tx*8 + rx}` : ''}
+                                    </div>
+                                  );
+                               })
+                            )}
+                         </div>
+                       </div>
+                     </div>
+
+                     <div className="flex flex-col gap-3 p-4 bg-slate-900 rounded border border-slate-800 min-w-[200px]">
+                        <div className="text-sm font-semibold text-slate-400 border-b border-slate-800 pb-2 mb-1">MIMO Statistics</div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Active TX (Rows):</span>
+                          <span className="text-slate-300 font-bold">{sim.transceiver.txMask.toString(2).split('1').length - 1} / 8</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Active RX (Cols):</span>
+                          <span className="text-slate-300 font-bold">{sim.transceiver.rxMask.toString(2).split('1').length - 1} / 8</span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
+                          <span className="text-cyan-500 font-semibold">Virtual Antennas:</span>
+                          <span className="text-cyan-400 font-bold">{sim.transceiver.virtualAntennas}</span>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
                 <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center justify-between">
