@@ -1,21 +1,29 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle } from 'lucide-react';
 import { Simulator } from './lib/simulator';
 
 export default function App() {
   const [sim] = useState(() => new Simulator());
   const [, setTick] = useState(0); // Used to force React renders on sim updates
+  const [inspectAddr, setInspectAddr] = useState('88000000'); // Default to DSS_L3
+  const [demoRunning, setDemoRunning] = useState(false);
 
   useEffect(() => {
     sim.onStateChange = () => setTick(t => t + 1);
   }, [sim]);
 
   const handleValidEDMA = () => {
+    // Write a recognizable dummy pattern to TCMA before EDMA
+    sim.mmu.writeWord(0x00018000, 0xDEADBEEF);
+    sim.mmu.writeWord(0x00018004, 0xCAFEBABE);
+    sim.mmu.writeWord(0x00018008, 0x12345678);
+    sim.mmu.writeWord(0x0001800C, 0x9ABCDEF0);
+
     const param = new Uint8Array(32);
     const view = new DataView(param.buffer);
     view.setUint32(0, 0x00018000, true); // SRC: TCMA
-    view.setUint16(4, 128, true); // A_CNT
-    view.setUint16(6, 4, true); // B_CNT
+    view.setUint16(4, 16, true); // A_CNT (16 bytes)
+    view.setUint16(6, 1, true); // B_CNT
     view.setUint32(8, 0x88000000, true); // DST: DSS_L3
     view.setUint16(24, 0xFFFF, true); // LINK: NULL
     sim.edma.triggerTransfer(0, 1, param);
@@ -30,6 +38,84 @@ export default function App() {
     view.setUint32(8, 0x88000000, true); // DST: DSS_L3
     view.setUint16(24, 0xFFFF, true); // LINK: NULL
     sim.edma.triggerTransfer(1, 0, param);
+  };
+
+  const runDemo = () => {
+    if (demoRunning) return;
+    setDemoRunning(true);
+    sim.log('DEMO', '--- Starting Automated Demo Sequence ---', 'info');
+    
+    setTimeout(() => {
+      sim.log('DEMO', '1. Simulating IPC Handshake...', 'info');
+      sim.mmu.writeWord(0x44000000, 0x1); // Write pulse
+    }, 1000);
+
+    setTimeout(() => {
+      sim.mmu.writeWord(0x44000008, 0x1); // Ack
+    }, 2500);
+
+    setTimeout(() => {
+      sim.log('DEMO', '2. Simulating EDMA Transfer from TCMA -> L3...', 'info');
+      handleValidEDMA();
+    }, 4000);
+
+    setTimeout(() => {
+      sim.log('DEMO', '3. Simulating Low Power Entry (Deep Sleep)...', 'info');
+      sim.mmu.writeWord(0x5A040004, 1); // Retention ON
+      sim.mmu.writeWord(0x5A040000, 3); // Deep Sleep
+    }, 6000);
+
+    setTimeout(() => {
+      sim.log('DEMO', '4. Simulating Wakeup (Memory Preserved)...', 'info');
+      sim.prcm.triggerWakeup();
+    }, 8000);
+
+    setTimeout(() => {
+      sim.log('DEMO', '5. Injecting Critical Hardware Fault...', 'info');
+      sim.prcm.injectFault();
+      sim.log('DEMO', '--- Demo Sequence Complete ---', 'info');
+      setDemoRunning(false);
+    }, 10000);
+  };
+
+  const renderMemory = () => {
+    const baseAddr = parseInt(inspectAddr, 16);
+    if (isNaN(baseAddr)) return <div className="text-red-400 p-2">Invalid Hex Address</div>;
+    
+    const rows = [];
+    for (let i = 0; i < 4; i++) {
+      const rowAddr = baseAddr + (i * 16);
+      const region = sim.mmu.getRegion(rowAddr);
+      
+      if (!region || rowAddr + 16 > region.base + region.size) {
+         rows.push(
+           <div key={i} className="flex gap-4 text-slate-600 mb-1">
+             <span>0x{rowAddr.toString(16).toUpperCase().padStart(8, '0')}</span>
+             <span>-- -- -- --  -- -- -- --  -- -- -- --  -- -- -- --</span>
+           </div>
+         );
+         continue;
+      }
+      
+      const words = [];
+      for (let j = 0; j < 4; j++) {
+         try {
+           const val = sim.mmu.readWord(rowAddr + j * 4);
+           // Display correctly as a 32-bit hex chunk
+           words.push(val.toString(16).padStart(8, '0').toUpperCase());
+         } catch {
+           words.push('????????');
+         }
+      }
+      
+      rows.push(
+         <div key={i} className="flex gap-6 text-slate-300 mb-1">
+             <span className="text-slate-500 font-bold">0x{rowAddr.toString(16).toUpperCase().padStart(8, '0')}</span>
+             <span className="text-emerald-300 tracking-widest">{words.join('  ')}</span>
+         </div>
+      );
+    }
+    return rows;
   };
 
   return (
@@ -64,6 +150,20 @@ export default function App() {
         {/* Controls Sidebar */}
         <aside className="w-80 border-r border-slate-800 bg-slate-900/30 p-4 overflow-y-auto flex flex-col gap-6">
           
+          <section>
+            <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+              <PlayCircle className="w-4 h-4" /> Demo Scenarios
+            </h2>
+            <button 
+              onClick={runDemo} 
+              disabled={demoRunning}
+              className="w-full text-left px-3 py-2 bg-indigo-900/50 hover:bg-indigo-800/50 text-indigo-300 rounded text-sm transition-colors border border-indigo-900/50 flex justify-between disabled:opacity-50"
+            >
+              <span>{demoRunning ? 'Running Demo...' : 'Run Automated Sequence'}</span>
+              {!demoRunning && <Play className="w-4 h-4" />}
+            </button>
+          </section>
+
           <section>
             <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
               <Zap className="w-4 h-4" /> PRCM Controls
@@ -141,7 +241,7 @@ export default function App() {
                   <MemoryStick className="w-4 h-4 text-indigo-400" />
                   <h3 className="font-semibold text-sm">Virtual Memory Map (vMMU)</h3>
                 </div>
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-3 h-52 overflow-y-auto">
                   {sim.mmu.regions.map(r => (
                     <div key={r.name} className="flex flex-col p-3 bg-slate-950 rounded border border-slate-800">
                       <div className="flex justify-between items-center mb-1">
@@ -191,6 +291,30 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Memory Inspector */}
+              <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
+                <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MemoryStick className="w-4 h-4 text-pink-400" />
+                    <h3 className="font-semibold text-sm">Memory Hex Inspector</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">Address:</span>
+                    <input 
+                      type="text" 
+                      value={inspectAddr} 
+                      onChange={e => setInspectAddr(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 w-24 outline-none focus:border-pink-500 transition-colors"
+                      placeholder="0xADDR"
+                    />
+                  </div>
+                </div>
+                <div className="p-4 bg-black">
+                  {renderMemory()}
+                </div>
+              </div>
+
             </div>
           </div>
 

@@ -124,10 +124,21 @@ export class EDMAValidator {
   triggerTransfer(index: number, syncMode: 0 | 1, paramBytes: Uint8Array) {
     if (!this.validateParamSet(index, paramBytes)) return;
     const view = new DataView(paramBytes.buffer);
+    const src = view.getUint32(0, true);
     const acnt = view.getUint16(4, true);
     const bcnt = view.getUint16(6, true);
+    const dst = view.getUint32(8, true);
     const transferSize = syncMode === 0 ? acnt : (acnt * bcnt);
-    this.sim.log('EDMA', `Triggered ${syncMode === 0 ? 'A-Sync' : 'B-Sync'} transfer on PaRAM ${index}. Transferred ${transferSize} bytes.`);
+
+    // Simulate real memory copy via vMMU
+    const srcReg = this.sim.mmu.getRegion(src);
+    const dstReg = this.sim.mmu.getRegion(dst);
+    if (srcReg && dstReg) {
+      const srcSlice = srcReg.data.slice(src - srcReg.base, src - srcReg.base + transferSize);
+      dstReg.data.set(srcSlice, dst - dstReg.base);
+    }
+
+    this.sim.log('EDMA', `Triggered ${syncMode === 0 ? 'A-Sync' : 'B-Sync'} transfer on PaRAM ${index}. Transferred ${transferSize} bytes from 0x${src.toString(16).toUpperCase()} to 0x${dst.toString(16).toUpperCase()}.`);
     this.sim.notify();
   }
 }
