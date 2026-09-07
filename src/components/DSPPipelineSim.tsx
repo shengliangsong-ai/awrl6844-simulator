@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight } from 'lucide-react';
+import 'katex/dist/katex.min.css';
+import { BlockMath } from 'react-katex';
+import { hanning, fft, cfarCA } from '../lib/dsp';
 
 interface Target {
   range: number;
@@ -22,60 +25,169 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   const [activeStage, setActiveStage] = useState<number>(0);
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
   
-  // Simulation parameters
+  // Simulation parameters (simulating a subset of a frame for speed)
+  const rangeBins = 128; // Samples per chirp
+  const dopplerBins = 64; // Chirps per frame
+  
   const [targets, setTargets] = useState<Target[]>([
     { range: 4.5, velocity: 1.5, rcs: 10 },
-    { range: 12.0, velocity: 0.0, rcs: 15 }
+    { range: 12.0, velocity: -2.0, rcs: 15 }
   ]);
   
   const [state, setState] = useState<PipelineState | null>(null);
 
-  const generateMockData = () => {
-    // Generate synthetic noise floor
-    const rangeBins = 128;
-    const dopplerBins = 64;
-    
-    const dopplerHeatmap = Array(rangeBins).fill(0).map(() => 
-      Array(dopplerBins).fill(0).map(() => Math.random() * 20)
-    );
-
-    const detections: {r: number, d: number, pwr: number}[] = [];
-    
-    // Inject targets
-    targets.forEach(t => {
-       const rBin = Math.floor((t.range / 20) * rangeBins);
-       const dBin = Math.floor(((t.velocity + 10) / 20) * dopplerBins);
-       
-       if (rBin >= 0 && rBin < rangeBins && dBin >= 0 && dBin < dopplerBins) {
-         // Main peak
-         dopplerHeatmap[rBin][dBin] = 80 + t.rcs;
-         detections.push({r: rBin, d: dBin, pwr: 80 + t.rcs});
-         
-         // Sidelobes
-         if (rBin > 0) dopplerHeatmap[rBin-1][dBin] = 50 + t.rcs;
-         if (rBin < rangeBins-1) dopplerHeatmap[rBin+1][dBin] = 50 + t.rcs;
-       }
-    });
-
-    setState({
-      adcRaw: Array(256).fill(0).map(() => Math.sin(Math.random()) * 2048),
-      rangeFFT: dopplerHeatmap.map(row => Math.max(...row)), // Max across doppler
-      dopplerFFT: dopplerHeatmap,
-      cfarDetections: detections,
-      clusters: detections // Simplified clustering
-    });
-  };
-
-  const runPipeline = async () => {
+  const executeMathPipeline = async () => {
     if (isRunning) return;
     setIsRunning(true);
     setSelectedStage(null);
-    generateMockData();
     
-    for (let i = 0; i <= 4; i++) {
-      setActiveStage(i);
-      await new Promise(r => setTimeout(r, 800));
+    // =========================================================================
+    // STAGE 0: RAW ADC BUFFER (FMCW Signal Generation)
+    // =========================================================================
+    setActiveStage(0);
+    await new Promise(r => setTimeout(r, 400));
+    
+    // Radar Parameters for translation
+    const maxRange = 25.0; // meters
+    const maxVelocity = 10.0; // m/s (Nyquist)
+    
+    // Create a 2D array [chirp][sample] of complex numbers
+    // In hardware, this is interleaved I/Q or real-only. We'll use complex for simplicity.
+    const rawSignalReal = Array(dopplerBins).fill(0).map(() => Array(rangeBins).fill(0));
+    const rawSignalImag = Array(dopplerBins).fill(0).map(() => Array(rangeBins).fill(0));
+    
+    // Inject targets mathematically
+    for (let chirp = 0; chirp < dopplerBins; chirp++) {
+      for (let samp = 0; samp < rangeBins; samp++) {
+        let realSum = 0;
+        let imagSum = 0;
+        
+        targets.forEach(t => {
+          // Normalize to bin indices (frequencies)
+          const rFreq = (t.range / maxRange) * (rangeBins / 2); // Normalized range frequency
+          const dFreq = (t.velocity / maxVelocity) * (dopplerBins / 2); // Normalized doppler frequency
+          
+          // Amplitude scaled by RCS
+          const amp = Math.pow(10, t.rcs / 10.0);
+          
+          // Phase = 2*PI * (range_freq * sample_idx / N + doppler_freq * chirp_idx / M)
+          const phase = 2 * Math.PI * ((rFreq * samp) / rangeBins + (dFreq * chirp) / dopplerBins);
+          
+          realSum += amp * Math.cos(phase);
+          imagSum += amp * Math.sin(phase);
+        });
+        
+        // Add AWGN (Noise)
+        const noiseFloor = 2.0;
+        realSum += (Math.random() - 0.5) * noiseFloor;
+        imagSum += (Math.random() - 0.5) * noiseFloor;
+        
+        rawSignalReal[chirp][samp] = realSum;
+        rawSignalImag[chirp][samp] = imagSum;
+      }
     }
+    
+    // Update UI state for Stage 0 (showing a single chirp's real samples)
+    const adcRawDisplay = [...rawSignalReal[0]];
+    setState(s => ({ ...s as any, adcRaw: adcRawDisplay }));
+    
+    // =========================================================================
+    // STAGE 1: 1D RANGE FFT
+    // =========================================================================
+    setActiveStage(1);
+    await new Promise(r => setTimeout(r, 400));
+    
+    const window1D = hanning(rangeBins);
+    
+    for (let chirp = 0; chirp < dopplerBins; chirp++) {
+      // 1. DC Removal & Windowing
+      let dcReal = 0;
+      for (let s = 0; s < rangeBins; s++) dcReal += rawSignalReal[chirp][s];
+      dcReal /= rangeBins;
+      
+      for (let s = 0; s < rangeBins; s++) {
+        rawSignalReal[chirp][s] = (rawSignalReal[chirp][s] - dcReal) * window1D[s];
+        rawSignalImag[chirp][s] = rawSignalImag[chirp][s] * window1D[s];
+      }
+      
+      // 2. 1D FFT (In-place)
+      fft(rawSignalReal[chirp], rawSignalImag[chirp]);
+    }
+    
+    // =========================================================================
+    // STAGE 2: 2D DOPPLER FFT (Radar Cube Transposition)
+    // =========================================================================
+    setActiveStage(2);
+    await new Promise(r => setTimeout(r, 400));
+    
+    const window2D = hanning(dopplerBins);
+    
+    // Transpose and 2D FFT
+    for (let r = 0; r < rangeBins; r++) {
+      const chirpReal = new Array(dopplerBins);
+      const chirpImag = new Array(dopplerBins);
+      
+      // Extract across chirps (Transpose access)
+      for (let c = 0; c < dopplerBins; c++) {
+        chirpReal[c] = rawSignalReal[c][r] * window2D[c];
+        chirpImag[c] = rawSignalImag[c][r] * window2D[c];
+      }
+      
+      // FFT across chirps
+      fft(chirpReal, chirpImag);
+      
+      // Write back to transpose matrix (we'll just replace the original arrays since we're done)
+      for (let c = 0; c < dopplerBins; c++) {
+        rawSignalReal[c][r] = chirpReal[c];
+        rawSignalImag[c][r] = chirpImag[c];
+      }
+    }
+    
+    // =========================================================================
+    // STAGE 3: CFAR-CA DETECTION & LOG-MAGNITUDE
+    // =========================================================================
+    setActiveStage(3);
+    await new Promise(r => setTimeout(r, 400));
+    
+    const heatmapLogMag = Array(rangeBins).fill(0).map(() => Array(dopplerBins).fill(0));
+    
+    // 1. Log-Magnitude Conversion
+    for (let r = 0; r < rangeBins; r++) {
+      for (let d = 0; d < dopplerBins; d++) {
+        // Shift doppler center (FFT Shift) to put 0 m/s in the middle of the array
+        const dShifted = (d + dopplerBins / 2) % dopplerBins;
+        const power = rawSignalReal[d][r] ** 2 + rawSignalImag[d][r] ** 2;
+        // Convert to dB scale
+        heatmapLogMag[r][dShifted] = power > 1e-10 ? 10 * Math.log10(power) : 0;
+      }
+    }
+    
+    // 2. 2D CFAR-CA Algorithm execution
+    // Train cells: 2, Guard cells: 2, Threshold: 15 dB
+    const detections = cfarCA(heatmapLogMag, 2, 2, 15.0);
+    
+    // =========================================================================
+    // STAGE 4: CLUSTERING & DSP POST-PROC
+    // =========================================================================
+    setActiveStage(4);
+    await new Promise(r => setTimeout(r, 400));
+    
+    // Convert bin indices back to physical units for display
+    const finalClusters = detections.map(det => ({
+      r: det.r,
+      d: det.d,
+      range_m: (det.r / (rangeBins / 2)) * maxRange,
+      velocity_m_s: ((det.d - dopplerBins / 2) / (dopplerBins / 2)) * maxVelocity,
+      power_db: det.pwr
+    }));
+    
+    setState({
+      adcRaw: adcRawDisplay,
+      rangeFFT: [], // Not displayed in final view
+      dopplerFFT: heatmapLogMag,
+      cfarDetections: detections,
+      clusters: finalClusters as any
+    });
     
     setIsRunning(false);
   };
@@ -87,7 +199,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       output: "Raw ADC Samples",
       inFormat: "Continuous FMCW waveform from RF frontend.",
       outFormat: `12-bit real/complex integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples].`,
-      memory: "HWA ACCEL_MEM (0x05100000)"
+      memory: "HWA ACCEL_MEM (0x05100000)",
+      math: "V_{in} = \\text{ADC\\_Code} \\times \\frac{1.8\\text{ V}}{2^{11}}",
+      desc: "The Analog-to-Digital Converter samples the 4 physical receiver channels simultaneously at rates up to 25 Msps (real-only baseband stage)."
     },
     1: {
       title: "Stage 1: 1D Range FFT",
@@ -95,7 +209,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       output: "Range Profile",
       inFormat: "16-bit ADC samples fetched via EDMA.",
       outFormat: `24-bit Complex I/Q fixed-point values. Computed via Radix-2 butterfly. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [128 Range Bins].`,
-      memory: "HWA M0/M1/M2/M3 RAM"
+      memory: "HWA M0/M1/M2/M3 RAM",
+      math: "X[k] = \\sum_{n=0}^{N-1} \\left( x[n] \\cdot w[n] \\right) e^{-j\\frac{2\\pi}{N}nk} \\quad \\rightarrow \\quad X_{scaled}[k] = X[k] \\times 2^{-S}",
+      desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 24-bit complex 1D FFT with radix-2 butterfly right-shift scaling (S)."
     },
     2: {
       title: "Stage 2: 2D Doppler FFT",
@@ -103,7 +219,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       output: "Radar Cube",
       inFormat: "Transposed 1D FFT results: [Rx] × [Range Bins] × [Chirps].",
       outFormat: `3D Range-Doppler Heatmap. Dimensions: [${numChannels} Rx Channels] × [128 Range Bins] × [64 Doppler Bins]. 24-bit complex.`,
-      memory: "DSS L3 RAM (0x88000000)"
+      memory: "DSS L3 RAM (0x88000000)",
+      math: "Y[m, k] = \\sum_{p=0}^{M-1} X_{transposed}[p, k] \\cdot w_{doppler}[p] \\cdot e^{-j\\frac{2\\pi}{M}pm}",
+      desc: "The HWA performs A-dim and B-dim address transposition to group samples across consecutive coherent chirps, then computes a 2D FFT to resolve velocities."
     },
     3: {
       title: "Stage 3: CFAR Detection",
@@ -111,7 +229,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       output: "Detected Peaks List",
       inFormat: "Radar Cube converted to Log-Magnitude (0.06dB steps).",
       outFormat: "Array of structs: { rangeIdx: uint16, dopplerIdx: uint16, power: uint16, noise: uint16 }.",
-      memory: "DSS L2 RAM (0x80800000)"
+      memory: "DSS L2 RAM (0x80800000)",
+      math: "\\text{Power}[m, k] = 10 \\log_{10}\\left( |Y[m, k]|^2 \\right) \\quad \\rightarrow \\quad Threshold = \\frac{1}{N_{train}} \\sum_{i \\in \\text{Train}} \\text{Power}_i + T_{dB}",
+      desc: "Converts complex I/Q inputs to logarithmic power. Employs sliding-window cell averaging (CFAR-CA) across training and guard cells to evaluate the local noise floor and flag peaks."
     },
     4: {
       title: "Stage 4: DSP Clustering",
@@ -119,7 +239,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       output: "Object Point Cloud",
       inFormat: "Sparse list of CFAR peaks.",
       outFormat: "Structured object tracks: [X (m), Y (m), Z (m), Velocity (m/s), SNR (dB)]. Sent over CAN-FD / UART.",
-      memory: "C66x DSP internal structures"
+      memory: "C66x DSP internal structures",
+      math: "\\theta = \\arcsin\\left( \\frac{\\Delta\\phi \\cdot \\lambda}{2\\pi \\cdot d} \\right)",
+      desc: "The C66x DSP processes detected peaks to resolve Angle-of-Arrival (AoA) across virtual antennas, then clusters point clouds using algorithms like DBSCAN."
     }
   };
 
@@ -157,7 +279,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           <h3 className="font-semibold text-sm">HWA 1.2 & C66x DSP Pipeline Verification</h3>
         </div>
         <button 
-          onClick={runPipeline}
+          onClick={executeMathPipeline}
           disabled={isRunning}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
         >
@@ -234,9 +356,22 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
                 </div>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-800">
-               <span className="text-xs font-semibold text-slate-500 mr-2">Target Memory Bank:</span>
-               <span className="text-xs font-mono text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded">{STAGE_DETAILS[selectedStage].memory}</span>
+            
+            <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hardware Concept</div>
+                <div className="text-sm text-slate-400 leading-relaxed">
+                  {STAGE_DETAILS[selectedStage].desc}
+                </div>
+                <div className="mt-3">
+                  <span className="text-xs font-semibold text-slate-500 mr-2">Target Memory Bank:</span>
+                  <span className="text-xs font-mono text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded">{STAGE_DETAILS[selectedStage].memory}</span>
+                </div>
+              </div>
+              
+              <div className="bg-slate-900/50 rounded-lg p-3 flex items-center justify-center overflow-x-auto border border-slate-800/50">
+                 <BlockMath math={STAGE_DETAILS[selectedStage].math} />
+              </div>
             </div>
           </div>
         </div>
