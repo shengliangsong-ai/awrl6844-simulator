@@ -1,19 +1,72 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download } from 'lucide-react';
 import { Simulator } from './lib/simulator';
+import { usePWAInstall } from './hooks/usePWAInstall';
+
+export const PWAInstallButton: React.FC = () => {
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+
+  if (isInstalled) return null;
+
+  if (isInstallable) {
+    return (
+      <button
+        onClick={install}
+        className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 transition"
+      >
+        <Download className="w-3.5 h-3.5" />
+        Install App Locally
+      </button>
+    );
+  }
+
+  if (isIOS) {
+    return (
+      <>
+        <button
+          onClick={() => setShowIOSGuide(true)}
+          className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 transition"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Install App
+        </button>
+        {showIOSGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-sm rounded-xl bg-slate-900 p-6 shadow-xl border border-slate-800">
+              <h3 className="text-lg font-semibold text-white">Install on iOS</h3>
+              <p className="mt-2 text-sm text-slate-400">
+                1. Tap the <strong>Share</strong> button in Safari.<br />
+                2. Tap <strong>Add to Home Screen</strong>.
+              </p>
+              <button
+                onClick={() => setShowIOSGuide(false)}
+                className="mt-4 w-full rounded-lg bg-slate-800 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+  return null;
+};
 
 export default function App() {
   const [sim] = useState(() => new Simulator());
-  const [, setTick] = useState(0); // Used to force React renders on sim updates
-  const [inspectAddr, setInspectAddr] = useState('88000000'); // Default to DSS_L3
+  const [, setTick] = useState(0);
+  const [inspectAddr, setInspectAddr] = useState('88000000');
   const [demoRunning, setDemoRunning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadAddr, setUploadAddr] = useState('00018000'); // TCMA
 
   useEffect(() => {
     sim.onStateChange = () => setTick(t => t + 1);
   }, [sim]);
 
   const handleValidEDMA = () => {
-    // Write a recognizable dummy pattern to TCMA before EDMA
     sim.mmu.writeWord(0x00018000, 0xDEADBEEF);
     sim.mmu.writeWord(0x00018004, 0xCAFEBABE);
     sim.mmu.writeWord(0x00018008, 0x12345678);
@@ -21,22 +74,22 @@ export default function App() {
 
     const param = new Uint8Array(32);
     const view = new DataView(param.buffer);
-    view.setUint32(0, 0x00018000, true); // SRC: TCMA
-    view.setUint16(4, 16, true); // A_CNT (16 bytes)
-    view.setUint16(6, 1, true); // B_CNT
-    view.setUint32(8, 0x88000000, true); // DST: DSS_L3
-    view.setUint16(24, 0xFFFF, true); // LINK: NULL
+    view.setUint32(0, 0x00018000, true);
+    view.setUint16(4, 16, true);
+    view.setUint16(6, 1, true);
+    view.setUint32(8, 0x88000000, true);
+    view.setUint16(24, 0xFFFF, true);
     sim.edma.triggerTransfer(0, 1, param);
   };
 
   const handleInvalidEDMA = () => {
     const param = new Uint8Array(32);
     const view = new DataView(param.buffer);
-    view.setUint32(0, 0x99999999, true); // SRC: INVALID
-    view.setUint16(4, 128, true); // A_CNT
-    view.setUint16(6, 4, true); // B_CNT
-    view.setUint32(8, 0x88000000, true); // DST: DSS_L3
-    view.setUint16(24, 0xFFFF, true); // LINK: NULL
+    view.setUint32(0, 0x99999999, true);
+    view.setUint16(4, 128, true);
+    view.setUint16(6, 4, true);
+    view.setUint32(8, 0x88000000, true);
+    view.setUint16(24, 0xFFFF, true);
     sim.edma.triggerTransfer(1, 0, param);
   };
 
@@ -47,11 +100,11 @@ export default function App() {
     
     setTimeout(() => {
       sim.log('DEMO', '1. Simulating IPC Handshake...', 'info');
-      sim.mmu.writeWord(0x44000000, 0x1); // Write pulse
+      sim.mmu.writeWord(0x44000000, 0x1);
     }, 1000);
 
     setTimeout(() => {
-      sim.mmu.writeWord(0x44000008, 0x1); // Ack
+      sim.mmu.writeWord(0x44000008, 0x1);
     }, 2500);
 
     setTimeout(() => {
@@ -61,8 +114,8 @@ export default function App() {
 
     setTimeout(() => {
       sim.log('DEMO', '3. Simulating Low Power Entry (Deep Sleep)...', 'info');
-      sim.mmu.writeWord(0x5A040004, 1); // Retention ON
-      sim.mmu.writeWord(0x5A040000, 3); // Deep Sleep
+      sim.mmu.writeWord(0x5A040004, 1);
+      sim.mmu.writeWord(0x5A040000, 3);
     }, 6000);
 
     setTimeout(() => {
@@ -76,6 +129,19 @@ export default function App() {
       sim.log('DEMO', '--- Demo Sequence Complete ---', 'info');
       setDemoRunning(false);
     }, 10000);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const addr = parseInt(uploadAddr, 16);
+    if (!isNaN(addr)) {
+      sim.mmu.loadBinary(addr, bytes);
+      setInspectAddr(uploadAddr); // auto-inspect loaded memory
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const renderMemory = () => {
@@ -101,7 +167,6 @@ export default function App() {
       for (let j = 0; j < 4; j++) {
          try {
            const val = sim.mmu.readWord(rowAddr + j * 4);
-           // Display correctly as a 32-bit hex chunk
            words.push(val.toString(16).padStart(8, '0').toUpperCase());
          } catch {
            words.push('????????');
@@ -120,11 +185,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-300 font-mono flex flex-col">
-      {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="text-blue-500 w-6 h-6" />
           <h1 className="text-lg font-bold text-slate-100">AWRL6844 Simulator Engine</h1>
+          <PWAInstallButton />
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
@@ -144,12 +209,45 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Controls Sidebar */}
         <aside className="w-80 border-r border-slate-800 bg-slate-900/30 p-4 overflow-y-auto flex flex-col gap-6">
           
+          <section>
+            <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+              <Upload className="w-4 h-4" /> Load Custom Binary
+            </h2>
+            <div className="bg-slate-800/50 border border-slate-700 p-3 rounded flex flex-col gap-3 text-xs">
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-400">Target Memory Address</label>
+                <div className="flex bg-slate-900 border border-slate-700 rounded overflow-hidden">
+                  <span className="px-2 py-1.5 bg-slate-800 text-slate-500 border-r border-slate-700">0x</span>
+                  <input 
+                    type="text" 
+                    value={uploadAddr}
+                    onChange={(e) => setUploadAddr(e.target.value)}
+                    className="bg-transparent flex-1 px-2 text-slate-300 outline-none"
+                    placeholder="00018000"
+                  />
+                </div>
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".bin,.hex,application/octet-stream"
+                className="hidden" 
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 transition-colors flex items-center justify-center gap-2 font-semibold"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Select .BIN / .HEX File
+              </button>
+            </div>
+          </section>
+
           <section>
             <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
               <PlayCircle className="w-4 h-4" /> Demo Scenarios
@@ -229,13 +327,11 @@ export default function App() {
 
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0">
           
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Virtual Memory Map */}
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
                 <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center gap-2">
                   <MemoryStick className="w-4 h-4 text-indigo-400" />
@@ -256,7 +352,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Register States */}
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden h-fit">
                 <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-emerald-400" />
@@ -292,7 +387,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Memory Inspector */}
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
                 <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -318,7 +412,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Terminal */}
           <div className="h-72 bg-black border-t border-slate-800 flex flex-col">
             <div className="bg-slate-900 border-b border-slate-800 p-2 px-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">

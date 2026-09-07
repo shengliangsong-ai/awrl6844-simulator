@@ -67,6 +67,23 @@ export class VirtualMMU {
     
     this.sim.log('MMU', `Wrote 0x${val.toString(16).toUpperCase()} to 0x${addr.toString(16).toUpperCase()} (${region.name})`);
   }
+
+  loadBinary(baseAddr: number, data: Uint8Array) {
+    const region = this.getRegion(baseAddr);
+    if (!region) {
+      this.sim.log('MMU', `Cannot load binary: Invalid base address 0x${baseAddr.toString(16).toUpperCase()}`, 'error');
+      return;
+    }
+    if (baseAddr + data.length > region.base + region.size) {
+      this.sim.log('MMU', `Cannot load binary: Exceeds region size ${region.name}`, 'error');
+      return;
+    }
+    
+    const offset = baseAddr - region.base;
+    region.data.set(data, offset);
+    this.sim.log('MMU', `Successfully loaded ${data.length} bytes into ${region.name} at 0x${baseAddr.toString(16).toUpperCase()}`, 'info');
+    this.sim.notify();
+  }
 }
 
 export class MailboxIPC {
