@@ -1,0 +1,8 @@
+{
+  "name": "AWRL6844 Simulator",
+  "description": "Functional mock and register-level simulator of the Texas Instruments AWRL6844 mmWave Radar SoC.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
