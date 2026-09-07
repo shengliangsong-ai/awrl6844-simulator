@@ -3,6 +3,7 @@ import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, 
 import { Simulator } from './lib/simulator';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { DocViewer } from './components/DocViewer';
+import { DSPPipelineSim } from './components/DSPPipelineSim';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -504,80 +505,85 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  {sim.mmu.socType === 'AWRL6888' && (
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">APP_CTRL: Transceiver (0x56060000)</h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="bg-slate-950 p-2 rounded border border-slate-800">
-                          <div className="text-slate-500 text-xs">ACTIVE V-ANTENNAS</div>
-                          <div className="font-mono text-pink-400">{sim.transceiver.virtualAntennas}</div>
-                        </div>
-                        <div className="bg-slate-950 p-2 rounded border border-slate-800">
-                          <div className="text-slate-500 text-xs">MASKS (TX/RX)</div>
-                          <div className="font-mono text-cyan-400">
-                            0x{sim.transceiver.txMask.toString(16).toUpperCase().padStart(2, '0')}/0x{sim.transceiver.rxMask.toString(16).toUpperCase().padStart(2, '0')}
-                          </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">APP_CTRL: Transceiver (0x56060000)</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                        <div className="text-slate-500 text-xs">ACTIVE V-ANTENNAS</div>
+                        <div className="font-mono text-pink-400">{sim.transceiver.virtualAntennas}</div>
+                      </div>
+                      <div className="bg-slate-950 p-2 rounded border border-slate-800">
+                        <div className="text-slate-500 text-xs">MASKS (TX/RX)</div>
+                        <div className="font-mono text-cyan-400">
+                          0x{sim.transceiver.txMask.toString(16).toUpperCase().padStart(2, '0')}/0x{sim.transceiver.rxMask.toString(16).toUpperCase().padStart(2, '0')}
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              {sim.mmu.socType === 'AWRL6888' && (
-                <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
-                  <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center gap-2">
-                     <Activity className="w-4 h-4 text-cyan-400" />
-                     <h3 className="font-semibold text-sm">8T8R MIMO Virtual Antenna Array Visualization</h3>
-                  </div>
-                  <div className="p-4 flex flex-col sm:flex-row items-center justify-center gap-8 bg-slate-950">
-                     
-                     <div className="flex flex-col gap-2">
-                       <div className="text-xs text-slate-500 font-semibold mb-1 text-center">RX Channels (Cols)</div>
-                       <div className="flex">
-                         <div className="text-xs text-slate-500 font-semibold mr-4 flex items-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                           TX Channels (Rows)
-                         </div>
-                         <div className="grid grid-cols-8 gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800 shadow-inner">
-                            {Array.from({length: 8}).map((_, tx) => 
-                               Array.from({length: 8}).map((_, rx) => {
-                                  const txActive = (sim.transceiver.txMask & (1 << tx)) !== 0;
-                                  const rxActive = (sim.transceiver.rxMask & (1 << rx)) !== 0;
-                                  const isActive = txActive && rxActive;
-                                  
-                                  return (
-                                    <div 
-                                      key={`${tx}-${rx}`} 
-                                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded ${isActive ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-slate-800 opacity-30'} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white/70 transition-all duration-300`}
-                                      title={`TX${tx}, RX${rx}`}
-                                    >
-                                       {isActive ? `V${tx*8 + rx}` : ''}
-                                    </div>
-                                  );
-                               })
-                            )}
-                         </div>
-                       </div>
-                     </div>
+              {(() => {
+                const numChannels = sim.mmu.socType === 'AWRL6888' ? 8 : 4;
+                return (
+                  <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
+                    <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-cyan-400" />
+                      <h3 className="font-semibold text-sm">{numChannels}T{numChannels}R MIMO Virtual Antenna Array Visualization</h3>
+                    </div>
+                    <div className="p-4 flex flex-col sm:flex-row items-center justify-center gap-8 bg-slate-950">
+                      
+                      <div className="flex flex-col gap-2">
+                        <div className="text-xs text-slate-500 font-semibold mb-1 text-center">RX Channels (Cols)</div>
+                        <div className="flex">
+                          <div className="text-xs text-slate-500 font-semibold mr-4 flex items-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                            TX Channels (Rows)
+                          </div>
+                          <div className={`grid ${numChannels === 8 ? 'grid-cols-8' : 'grid-cols-4'} gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800 shadow-inner`}>
+                              {Array.from({length: numChannels}).map((_, tx) => 
+                                Array.from({length: numChannels}).map((_, rx) => {
+                                    const txActive = (sim.transceiver.txMask & (1 << tx)) !== 0;
+                                    const rxActive = (sim.transceiver.rxMask & (1 << rx)) !== 0;
+                                    const isActive = txActive && rxActive;
+                                    
+                                    return (
+                                      <div 
+                                        key={`${tx}-${rx}`} 
+                                        className={`w-6 h-6 sm:w-8 sm:h-8 rounded ${isActive ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-slate-800 opacity-30'} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white/70 transition-all duration-300`}
+                                        title={`TX${tx}, RX${rx}`}
+                                      >
+                                        {isActive ? `V${tx*numChannels + rx}` : ''}
+                                      </div>
+                                    );
+                                })
+                              )}
+                          </div>
+                        </div>
+                      </div>
 
-                     <div className="flex flex-col gap-3 p-4 bg-slate-900 rounded border border-slate-800 min-w-[200px]">
-                        <div className="text-sm font-semibold text-slate-400 border-b border-slate-800 pb-2 mb-1">MIMO Statistics</div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Active TX (Rows):</span>
-                          <span className="text-slate-300 font-bold">{sim.transceiver.txMask.toString(2).split('1').length - 1} / 8</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Active RX (Cols):</span>
-                          <span className="text-slate-300 font-bold">{sim.transceiver.rxMask.toString(2).split('1').length - 1} / 8</span>
-                        </div>
-                        <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
-                          <span className="text-cyan-500 font-semibold">Virtual Antennas:</span>
-                          <span className="text-cyan-400 font-bold">{sim.transceiver.virtualAntennas}</span>
-                        </div>
-                     </div>
+                      <div className="flex flex-col gap-3 p-4 bg-slate-900 rounded border border-slate-800 min-w-[200px]">
+                          <div className="text-sm font-semibold text-slate-400 border-b border-slate-800 pb-2 mb-1">MIMO Statistics</div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Active TX (Rows):</span>
+                            <span className="text-slate-300 font-bold">{sim.transceiver.txMask.toString(2).split('1').length - 1} / {numChannels}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Active RX (Cols):</span>
+                            <span className="text-slate-300 font-bold">{sim.transceiver.rxMask.toString(2).split('1').length - 1} / {numChannels}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
+                            <span className="text-cyan-500 font-semibold">Virtual Antennas:</span>
+                            <span className="text-cyan-400 font-bold">{sim.transceiver.virtualAntennas}</span>
+                          </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
+
+              <div className="lg:col-span-2">
+                <DSPPipelineSim socType={sim.mmu.socType} />
+              </div>
 
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2 flex flex-col">
                 <div className="bg-slate-800/50 p-3 border-b border-slate-800">
