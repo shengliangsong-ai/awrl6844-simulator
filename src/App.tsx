@@ -65,6 +65,7 @@ export default function App() {
   const [writeMemAddr, setWriteMemAddr] = useState('');
   const [writeMemVal, setWriteMemVal] = useState('');
   const [showDocs, setShowDocs] = useState(false);
+  const [logFilter, setLogFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
 
   useEffect(() => {
     sim.onStateChange = () => setTick(t => t + 1);
@@ -160,6 +161,21 @@ export default function App() {
         sim.log('UI', `Manual write failed: ${err.message}`, 'error');
       }
     }
+  };
+
+  const handleDownloadRegion = (regionName: string) => {
+    const region = sim.mmu.regions.find(r => r.name === regionName);
+    if (!region) return;
+    const blob = new Blob([region.data], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${region.name.toLowerCase()}_dump.bin`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    sim.log('UI', `Exported memory dump for ${region.name}`, 'info');
   };
 
   const renderMemory = () => {
@@ -563,24 +579,69 @@ export default function App() {
                 </div>
               )}
 
-              <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2">
-                <div className="bg-slate-800/50 p-3 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MemoryStick className="w-4 h-4 text-pink-400" />
-                    <h3 className="font-semibold text-sm">Memory Hex Inspector</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">Address:</span>
-                    <input 
-                      type="text" 
-                      value={inspectAddr} 
-                      onChange={e => setInspectAddr(e.target.value)}
-                      className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 w-24 outline-none focus:border-pink-500 transition-colors"
-                      placeholder="0xADDR"
-                    />
+              <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2 flex flex-col">
+                <div className="bg-slate-800/50 p-3 border-b border-slate-800">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MemoryStick className="w-4 h-4 text-pink-400" />
+                        <h3 className="font-semibold text-sm">Memory Hex Inspector</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">Address:</span>
+                        <input 
+                          type="text" 
+                          value={inspectAddr} 
+                          onChange={e => setInspectAddr(e.target.value)}
+                          className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 w-24 outline-none focus:border-pink-500 transition-colors"
+                          placeholder="0xADDR"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800/50">
+                      <span className="text-xs text-slate-500 flex items-center mr-2">Quick Jump:</span>
+                      {sim.mmu.regions.map(r => (
+                        <div key={r.name} className="flex overflow-hidden rounded border border-slate-700 bg-slate-800">
+                          <button
+                            onClick={() => setInspectAddr(r.base.toString(16).toUpperCase().padStart(8, '0'))}
+                            className="px-2 py-1 text-[10px] font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors border-r border-slate-700"
+                          >
+                            {r.name}
+                          </button>
+                          <button
+                            onClick={() => handleDownloadRegion(r.name)}
+                            title={`Download ${r.name} memory dump`}
+                            className="px-1.5 py-1 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors flex items-center justify-center"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex overflow-hidden rounded border border-slate-700 bg-slate-800 ml-auto">
+                        <button
+                          onClick={() => setInspectAddr('5A040000')}
+                          className="px-2 py-1 text-[10px] font-semibold text-amber-300 hover:bg-slate-700 transition-colors border-r border-slate-700"
+                        >
+                          PRCM
+                        </button>
+                        <button
+                          onClick={() => setInspectAddr('56060000')}
+                          className="px-2 py-1 text-[10px] font-semibold text-cyan-300 hover:bg-slate-700 transition-colors border-r border-slate-700"
+                        >
+                          APP_CTRL
+                        </button>
+                        <button
+                          onClick={() => setInspectAddr('44000000')}
+                          className="px-2 py-1 text-[10px] font-semibold text-emerald-300 hover:bg-slate-700 transition-colors"
+                        >
+                          IPC
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="p-4 bg-black">
+                <div className="p-4 bg-black overflow-y-auto flex-1 min-h-[160px]">
                   {renderMemory()}
                 </div>
               </div>
@@ -590,19 +651,59 @@ export default function App() {
 
           <div className="h-72 bg-black border-t border-slate-800 flex flex-col">
             <div className="bg-slate-900 border-b border-slate-800 p-2 px-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-300">Simulator Log Trace</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs font-semibold text-slate-300">Simulator Log Trace</span>
+                </div>
+                
+                <div className="flex bg-slate-800 rounded border border-slate-700 overflow-hidden">
+                  {(['all', 'info', 'warn', 'error'] as const).map(level => (
+                    <button
+                      key={level}
+                      onClick={() => setLogFilter(level)}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-colors ${
+                        logFilter === level 
+                          ? level === 'error' ? 'bg-red-500/20 text-red-400' 
+                            : level === 'warn' ? 'bg-amber-500/20 text-amber-400'
+                            : level === 'info' ? 'bg-blue-500/20 text-blue-400'
+                            : 'bg-slate-700 text-white'
+                          : 'text-slate-500 hover:bg-slate-700'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button 
-                onClick={() => { sim.logs = []; setTick(t => t+1); }}
-                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                Clear
-              </button>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => {
+                    const trace = sim.logs.map(l => `[${new Date(l.timestamp).toISOString()}] [${l.prefix}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
+                    const blob = new Blob([trace], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `simulator_trace_${new Date().getTime()}.log`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  }}
+                  className="text-[10px] font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1 bg-slate-800 px-2 py-1 rounded"
+                >
+                  <Download className="w-3 h-3" /> Export
+                </button>
+                <button 
+                  onClick={() => { sim.logs = []; setTick(t => t+1); }}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed space-y-1">
-              {sim.logs.map(log => (
+              {sim.logs.filter(log => logFilter === 'all' || log.level === logFilter).map(log => (
                 <div key={log.id} className={`flex gap-3 ${
                   log.level === 'error' ? 'text-red-400' :
                   log.level === 'warn' ? 'text-amber-400' :
