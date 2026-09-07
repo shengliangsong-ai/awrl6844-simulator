@@ -20,6 +20,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   
   const [isRunning, setIsRunning] = useState(false);
   const [activeStage, setActiveStage] = useState<number>(0);
+  const [selectedStage, setSelectedStage] = useState<number | null>(null);
   
   // Simulation parameters
   const [targets, setTargets] = useState<Target[]>([
@@ -68,6 +69,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   const runPipeline = async () => {
     if (isRunning) return;
     setIsRunning(true);
+    setSelectedStage(null);
     generateMockData();
     
     for (let i = 0; i <= 4; i++) {
@@ -78,14 +80,62 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     setIsRunning(false);
   };
 
-  const PipelineStage = ({ num, title, icon: Icon, desc, active }: any) => (
-    <div className={`relative p-4 rounded-xl border transition-all duration-500 ${
-      active 
-        ? 'bg-indigo-900/30 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' 
-        : activeStage > num 
-          ? 'bg-emerald-900/10 border-emerald-500/50'
-          : 'bg-slate-900/50 border-slate-800'
-    }`}>
+  const STAGE_DETAILS: Record<number, any> = {
+    0: {
+      title: "Stage 0: ADC Buffer",
+      input: "Analog IF Signal",
+      output: "Raw ADC Samples",
+      inFormat: "Continuous FMCW waveform from RF frontend.",
+      outFormat: `12-bit real/complex integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples].`,
+      memory: "HWA ACCEL_MEM (0x05100000)"
+    },
+    1: {
+      title: "Stage 1: 1D Range FFT",
+      input: "Raw ADC Samples",
+      output: "Range Profile",
+      inFormat: "16-bit ADC samples fetched via EDMA.",
+      outFormat: `24-bit Complex I/Q fixed-point values. Computed via Radix-2 butterfly. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [128 Range Bins].`,
+      memory: "HWA M0/M1/M2/M3 RAM"
+    },
+    2: {
+      title: "Stage 2: 2D Doppler FFT",
+      input: "Range Profile",
+      output: "Radar Cube",
+      inFormat: "Transposed 1D FFT results: [Rx] × [Range Bins] × [Chirps].",
+      outFormat: `3D Range-Doppler Heatmap. Dimensions: [${numChannels} Rx Channels] × [128 Range Bins] × [64 Doppler Bins]. 24-bit complex.`,
+      memory: "DSS L3 RAM (0x88000000)"
+    },
+    3: {
+      title: "Stage 3: CFAR Detection",
+      input: "Radar Cube",
+      output: "Detected Peaks List",
+      inFormat: "Radar Cube converted to Log-Magnitude (0.06dB steps).",
+      outFormat: "Array of structs: { rangeIdx: uint16, dopplerIdx: uint16, power: uint16, noise: uint16 }.",
+      memory: "DSS L2 RAM (0x80800000)"
+    },
+    4: {
+      title: "Stage 4: DSP Clustering",
+      input: "Detected Peaks List",
+      output: "Object Point Cloud",
+      inFormat: "Sparse list of CFAR peaks.",
+      outFormat: "Structured object tracks: [X (m), Y (m), Z (m), Velocity (m/s), SNR (dB)]. Sent over CAN-FD / UART.",
+      memory: "C66x DSP internal structures"
+    }
+  };
+
+  const PipelineStage = ({ num, title, icon: Icon, desc, active, onClick, selected }: any) => (
+    <div 
+      onClick={onClick}
+      className={`relative p-4 rounded-xl border transition-all duration-300 cursor-pointer ${
+        active 
+          ? 'bg-indigo-900/30 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' 
+          : selected
+            ? 'bg-slate-800 border-slate-500 ring-1 ring-slate-500'
+            : activeStage > num 
+              ? 'bg-emerald-900/10 border-emerald-500/50 hover:bg-emerald-900/20 hover:border-emerald-500'
+              : 'bg-slate-900/50 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
+      }`}
+    >
       <div className="flex items-center gap-3 mb-2">
         <div className={`p-2 rounded-lg ${active ? 'bg-indigo-500 text-white' : activeStage > num ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
           <Icon className="w-5 h-5" />
@@ -123,6 +173,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           icon={Waves}
           desc={`Digitizes IF reflections. Buffers ${numChannels} Rx channels at 25 Msps into ACCEL_MEM.`}
           active={activeStage === 0 && isRunning}
+          selected={selectedStage === 0}
+          onClick={() => setSelectedStage(0)}
         />
         <PipelineStage 
           num={1} 
@@ -130,6 +182,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           icon={BarChart2}
           desc="HWA 1.2 removes DC bias, applies Hanning window, and computes 24-bit fixed-point FFT."
           active={activeStage === 1 && isRunning}
+          selected={selectedStage === 1}
+          onClick={() => setSelectedStage(1)}
         />
         <PipelineStage 
           num={2} 
@@ -137,6 +191,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           icon={Layers}
           desc="Transposes 1D data and computes FFT across coherent chirps to generate Radar Cube."
           active={activeStage === 2 && isRunning}
+          selected={selectedStage === 2}
+          onClick={() => setSelectedStage(2)}
         />
         <PipelineStage 
           num={3} 
@@ -144,6 +200,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           icon={Filter}
           desc="Converts to log-magnitude (0.06dB steps) and runs Cell-Averaging peak detection."
           active={activeStage === 3 && isRunning}
+          selected={selectedStage === 3}
+          onClick={() => setSelectedStage(3)}
         />
         <PipelineStage 
           num={4} 
@@ -151,8 +209,38 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           icon={Hash}
           desc="C66x DSP processes sparse point cloud to cluster targets and estimate AoA."
           active={activeStage === 4}
+          selected={selectedStage === 4}
+          onClick={() => setSelectedStage(4)}
         />
       </div>
+
+      {selectedStage !== null && STAGE_DETAILS[selectedStage] && (
+        <div className="px-6 pb-6 animate-in slide-in-from-top-2">
+          <div className="bg-slate-950 border border-slate-700 rounded-lg p-5">
+            <h4 className="font-semibold text-indigo-300 mb-4 flex items-center gap-2">
+              <ArrowRight className="w-4 h-4" /> {STAGE_DETAILS[selectedStage].title} I/O Formats
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Input: {STAGE_DETAILS[selectedStage].input}</div>
+                <div className="bg-slate-900 border border-slate-800 p-3 rounded font-mono text-xs text-slate-300 leading-relaxed">
+                  {STAGE_DETAILS[selectedStage].inFormat}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Output: {STAGE_DETAILS[selectedStage].output}</div>
+                <div className="bg-slate-900 border border-slate-800 p-3 rounded font-mono text-xs text-emerald-300 leading-relaxed">
+                  {STAGE_DETAILS[selectedStage].outFormat}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-800">
+               <span className="text-xs font-semibold text-slate-500 mr-2">Target Memory Bank:</span>
+               <span className="text-xs font-mono text-cyan-400 bg-cyan-900/20 px-2 py-1 rounded">{STAGE_DETAILS[selectedStage].memory}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {state && activeStage === 4 && (
         <div className="p-6 border-t border-slate-800 bg-black/50">
