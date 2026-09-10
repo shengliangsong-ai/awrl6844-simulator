@@ -39,16 +39,16 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   const getTargetsForConfiguration = (config: SeatConfig) => {
     const t = [];
     if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 25, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
-    if (config.FL === 'infant') t.push({ range: 0.8, velocity: 0.35, rcs: 18, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.8] });
+    if (config.FL === 'infant') t.push({ range: 0.95, velocity: 0.35, rcs: 18, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.95] });
     
-    if (config.FR === 'adult') t.push({ range: 0.9, velocity: 0.12, rcs: 25, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.8] });
-    if (config.FR === 'infant') t.push({ range: 0.9, velocity: 0.32, rcs: 18, name: 'Infant (Front Right)', pos: [0.35, -0.4, 0.8] });
+    if (config.FR === 'adult') t.push({ range: 0.85, velocity: 0.12, rcs: 25, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.85] });
+    if (config.FR === 'infant') t.push({ range: 1.0, velocity: 0.32, rcs: 18, name: 'Infant (Front Right)', pos: [0.35, -0.4, 1.0] });
     
     if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 25, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
-    if (config.BL === 'infant') t.push({ range: 1.4, velocity: 0.38, rcs: 18, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.4] });
+    if (config.BL === 'infant') t.push({ range: 1.55, velocity: 0.38, rcs: 18, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.55] });
     
-    if (config.BR === 'adult') t.push({ range: 1.5, velocity: 0.14, rcs: 25, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.4] });
-    if (config.BR === 'infant') t.push({ range: 1.5, velocity: 0.34, rcs: 18, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.4] });
+    if (config.BR === 'adult') t.push({ range: 1.45, velocity: 0.14, rcs: 25, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.45] });
+    if (config.BR === 'infant') t.push({ range: 1.6, velocity: 0.34, rcs: 18, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.6] });
     return t;
   };
 
@@ -56,6 +56,11 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   
   useEffect(() => {
     setTargets(getTargetsForConfiguration(seats));
+    // Clear the previously simulated data when the configuration changes
+    // so the user knows they need to re-run the simulation
+    setState(null);
+    setActiveStage(0);
+    setSelectedStage(null);
   }, [seats]);
   
   const toggleSeat = (seatKey: keyof SeatConfig) => {
@@ -95,8 +100,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     await new Promise(r => setTimeout(r, 400));
     
     // Radar Parameters for translation
-    const maxRange = 25.0; // meters
-    const maxVelocity = 10.0; // m/s (Nyquist)
+    const maxRange = 5.0; // meters (reduced to increase resolution inside cabin)
+    const maxVelocity = 2.0; // m/s (Nyquist for micro-doppler)
     
     // Create a 2D array [chirp][sample] of complex numbers
     // In hardware, this is interleaved I/Q or real-only. We'll use complex for simplicity.
