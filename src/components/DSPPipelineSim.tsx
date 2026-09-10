@@ -166,8 +166,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       fft(rawSignalReal[chirp], rawSignalImag[chirp]);
     }
     
-    const rangeFFTMag = new Array(rangeBins);
-    for (let s = 0; s < rangeBins; s++) {
+    const validRangeBins = rangeBins / 2;
+    const rangeFFTMag = new Array(validRangeBins);
+    for (let s = 0; s < validRangeBins; s++) {
       rangeFFTMag[s] = Math.sqrt(rawSignalReal[0][s]**2 + rawSignalImag[0][s]**2);
     }
     
@@ -206,10 +207,11 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     setActiveStage(3);
     await new Promise(r => setTimeout(r, 400));
     
-    const heatmapLogMag = Array(rangeBins).fill(0).map(() => Array(dopplerBins).fill(0));
+    // Only map the positive beat frequencies (valid ranges)
+    const heatmapLogMag = Array(validRangeBins).fill(0).map(() => Array(dopplerBins).fill(0));
     
     // 1. Log-Magnitude Conversion
-    for (let r = 0; r < rangeBins; r++) {
+    for (let r = 0; r < validRangeBins; r++) {
       for (let d = 0; d < dopplerBins; d++) {
         // Shift doppler center (FFT Shift) to put 0 m/s in the middle of the array
         const dShifted = (d + dopplerBins / 2) % dopplerBins;

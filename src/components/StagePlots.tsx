@@ -53,20 +53,46 @@ const RadarHeatmap = ({ data }: { data: number[][] }) => {
   }, [data]);
 
   return (
-    <div className="flex flex-col items-center w-full relative h-[250px] bg-slate-900 border border-slate-700 rounded-lg overflow-hidden p-2">
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-slate-500 font-bold tracking-wider">
-        Range Bin (0 → 128)
+    <div className="flex flex-col w-full h-auto bg-slate-900 border border-slate-700 rounded-lg overflow-hidden p-2">
+      <div className="flex flex-col items-center w-full relative h-[250px]">
+        <div className="absolute left-1 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-slate-500 font-bold tracking-wider">
+          Distance / Range Bin (0 → 64)
+        </div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 font-bold tracking-wider">
+          Velocity / Micro-motion (Doppler)
+        </div>
+        <div className="w-[calc(100%-40px)] h-[calc(100%-20px)] ml-6 mb-4 relative rounded overflow-hidden border border-slate-800">
+          <canvas 
+            ref={canvasRef} 
+            width={640} 
+            height={640} 
+            className="w-full h-full object-fill rendering-pixelated"
+          />
+        </div>
       </div>
-      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 font-bold tracking-wider">
-        Doppler Bin (0 → 64)
-      </div>
-      <div className="w-[calc(100%-40px)] h-[calc(100%-24px)] ml-6 mb-4 relative rounded overflow-hidden border border-slate-800">
-        <canvas 
-          ref={canvasRef} 
-          width={640} 
-          height={640} 
-          className="w-full h-full object-fill rendering-pixelated"
-        />
+      
+      {/* Legend & Explanation */}
+      <div className="mt-1 px-4 pb-2 text-[10px] text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-2">
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-slate-300">Power:</span>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-[rgb(0,0,128)] rounded-[2px]"></div>
+              <span>Noise</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-[rgb(0,255,0)] rounded-[2px]"></div>
+              <span>Weak</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-[rgb(255,0,0)] rounded-[2px]"></div>
+              <span>Strong</span>
+            </div>
+          </div>
+          <div className="text-[9px] text-slate-500 italic max-w-[200px] text-right">
+            Red hotspots indicate physical occupants reflecting radar energy.
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -87,15 +113,15 @@ export const StagePlot = ({ stage, state }: { stage: number, state: any }) => {
         // Stage 0: ADC Raw
         const data = state.adcRaw.map((val: number, idx: number) => ({ sample: idx, amplitude: val }));
         return (
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data}>
+          <div className="w-full overflow-x-auto h-[250px]">
+            <LineChart width={600} height={250} data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="sample" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Sample Index', position: 'insideBottom', offset: -5, fill: '#64748b', fontSize: 10 }} />
               <YAxis stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Amplitude', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 10 }} />
               <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '12px' }} />
               <Line type="monotone" dataKey="amplitude" stroke="#6366f1" dot={false} strokeWidth={2} />
             </LineChart>
-          </ResponsiveContainer>
+          </div>
         );
       }
       case 1: {
@@ -103,15 +129,15 @@ export const StagePlot = ({ stage, state }: { stage: number, state: any }) => {
         if (!state.rangeFFT || state.rangeFFT.length === 0) return <div>No Range FFT data</div>;
         const data = state.rangeFFT.map((val: number, idx: number) => ({ bin: idx, power: val }));
         return (
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data}>
+          <div className="w-full overflow-x-auto h-[250px]">
+            <LineChart width={600} height={250} data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="bin" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Range Bin', position: 'insideBottom', offset: -5, fill: '#64748b', fontSize: 10 }} />
               <YAxis stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Magnitude', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 10 }} />
               <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '12px' }} />
               <Line type="monotone" dataKey="power" stroke="#10b981" dot={false} strokeWidth={2} />
             </LineChart>
-          </ResponsiveContainer>
+          </div>
         );
       }
       case 2: {
@@ -124,16 +150,16 @@ export const StagePlot = ({ stage, state }: { stage: number, state: any }) => {
         if (!state.cfarDetections || state.cfarDetections.length === 0) return <div>No CFAR data or detections</div>;
         
         return (
-          <ResponsiveContainer width="100%" height={250}>
-            <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 20 }}>
+          <div className="w-full overflow-x-auto h-[250px]">
+            <ScatterChart width={600} height={250} margin={{ top: 10, right: 10, bottom: 20, left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis type="number" dataKey="d" name="Doppler Bin" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Doppler Bin', position: 'insideBottom', offset: -10, fill: '#64748b', fontSize: 10 }} domain={[0, 64]} />
-              <YAxis type="number" dataKey="r" name="Range Bin" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Range Bin', angle: -90, position: 'insideLeft', offset: -10, fill: '#64748b', fontSize: 10 }} reversed domain={[0, 128]} />
+              <YAxis type="number" dataKey="r" name="Range Bin" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Range Bin', angle: -90, position: 'insideLeft', offset: -10, fill: '#64748b', fontSize: 10 }} reversed domain={[0, 64]} />
               <ZAxis type="number" dataKey="pwr" range={[30, 300]} name="Power (dB)" />
               <Tooltip cursor={{strokeDasharray: '3 3'}} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '12px' }} />
               <Scatter name="CFAR Hits" data={state.cfarDetections} fill="#ef4444" opacity={0.9} shape="circle" />
             </ScatterChart>
-          </ResponsiveContainer>
+          </div>
         );
       }
       case 4: {

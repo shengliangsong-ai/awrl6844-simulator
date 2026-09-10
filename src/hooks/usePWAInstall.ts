@@ -32,12 +32,16 @@ export function usePWAInstall() {
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.addEventListener('appinstalled', handleAppInstalled);
+    }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      }
     };
   }, []);
 
