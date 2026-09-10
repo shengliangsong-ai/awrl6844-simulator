@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
 import { hanning, fft, cfarCA } from '../lib/dsp';
 import { Cabin3DView } from './Cabin3DView';
+import { StagePlot } from './StagePlots';
 
 interface Target {
   range: number;
@@ -37,17 +38,17 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   
   const getTargetsForConfiguration = (config: SeatConfig) => {
     const t = [];
-    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 10, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
-    if (config.FL === 'infant') t.push({ range: 0.8, velocity: 0.35, rcs: 3, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.8] });
+    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 25, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
+    if (config.FL === 'infant') t.push({ range: 0.8, velocity: 0.35, rcs: 18, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.8] });
     
-    if (config.FR === 'adult') t.push({ range: 0.9, velocity: 0.12, rcs: 10, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.8] });
-    if (config.FR === 'infant') t.push({ range: 0.9, velocity: 0.32, rcs: 3, name: 'Infant (Front Right)', pos: [0.35, -0.4, 0.8] });
+    if (config.FR === 'adult') t.push({ range: 0.9, velocity: 0.12, rcs: 25, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.8] });
+    if (config.FR === 'infant') t.push({ range: 0.9, velocity: 0.32, rcs: 18, name: 'Infant (Front Right)', pos: [0.35, -0.4, 0.8] });
     
-    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 10, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
-    if (config.BL === 'infant') t.push({ range: 1.4, velocity: 0.38, rcs: 3, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.4] });
+    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 25, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
+    if (config.BL === 'infant') t.push({ range: 1.4, velocity: 0.38, rcs: 18, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.4] });
     
-    if (config.BR === 'adult') t.push({ range: 1.5, velocity: 0.14, rcs: 10, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.4] });
-    if (config.BR === 'infant') t.push({ range: 1.5, velocity: 0.34, rcs: 3, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.4] });
+    if (config.BR === 'adult') t.push({ range: 1.5, velocity: 0.14, rcs: 25, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.4] });
+    if (config.BR === 'infant') t.push({ range: 1.5, velocity: 0.34, rcs: 18, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.4] });
     return t;
   };
 
@@ -124,7 +125,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
         });
         
         // Add AWGN (Noise)
-        const noiseFloor = 2.0;
+        const noiseFloor = 0.5; // Lowered noise floor
         realSum += (Math.random() - 0.5) * noiseFloor;
         imagSum += (Math.random() - 0.5) * noiseFloor;
         
@@ -158,6 +159,11 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       
       // 2. 1D FFT (In-place)
       fft(rawSignalReal[chirp], rawSignalImag[chirp]);
+    }
+    
+    const rangeFFTMag = new Array(rangeBins);
+    for (let s = 0; s < rangeBins; s++) {
+      rangeFFTMag[s] = Math.sqrt(rawSignalReal[0][s]**2 + rawSignalImag[0][s]**2);
     }
     
     // =========================================================================
@@ -209,8 +215,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     }
     
     // 2. 2D CFAR-CA Algorithm execution
-    // Train cells: 2, Guard cells: 2, Threshold: 15 dB
-    const detections = cfarCA(heatmapLogMag, 2, 2, 15.0);
+    // Train cells: 2, Guard cells: 2, Threshold: 10 dB
+    const detections = cfarCA(heatmapLogMag, 2, 2, 10.0);
     
     // =========================================================================
     // STAGE 4: CLUSTERING & DSP POST-PROC
@@ -229,7 +235,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     
     setState({
       adcRaw: adcRawDisplay,
-      rangeFFT: [], // Not displayed in final view
+      rangeFFT: rangeFFTMag,
       dopplerFFT: heatmapLogMag,
       cfarDetections: detections,
       clusters: finalClusters as any
@@ -436,6 +442,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
                  <BlockMath math={STAGE_DETAILS[selectedStage].math} />
               </div>
             </div>
+
+            {/* Dynamic Stage Plot Visualization */}
+            <StagePlot stage={selectedStage} state={state} />
           </div>
         </div>
       )}
