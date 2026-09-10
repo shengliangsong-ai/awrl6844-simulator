@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Box, Cone, Line } from '@react-three/drei';
+import { OrbitControls, Box, Cone, Line, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { ArrowUp } from 'lucide-react';
 
@@ -167,28 +167,78 @@ const Seat = ({ position, hasInfant }: { position: [number, number, number], has
 
 const CarChassis = () => (
   <group position={[0, 0, 1.1]}>
-    {/* Base Chassis Outline */}
+    {/* Base Chassis Outline (Model Y proportions) */}
     <Box args={[1.8, 1.2, 3.2]} position={[0, 0, 0]}>
       <meshBasicMaterial color="#334155" wireframe opacity={0.15} transparent />
     </Box>
     
+    {/* Dashboard Plane */}
+    <Box args={[1.7, 0.3, 0.4]} position={[0, -0.15, -1.2]}>
+      <meshBasicMaterial color="#1e293b" wireframe opacity={0.2} transparent />
+    </Box>
+
+    {/* Steering Wheel (Ring) */}
+    <group position={[-0.4, 0.1, -1.0]} rotation={[-Math.PI / 6, 0, 0]}>
+      <mesh>
+        <torusGeometry args={[0.15, 0.02, 8, 24]} />
+        <meshBasicMaterial color="#475569" wireframe opacity={0.5} transparent />
+      </mesh>
+    </group>
+
+    {/* Glass Roofline Arc */}
+    <mesh position={[0, 0.6, 0]}>
+      <cylinderGeometry args={[0.9, 0.9, 3.2, 16, 1, true, 0, Math.PI]} />
+      <meshBasicMaterial color="#334155" wireframe opacity={0.1} transparent />
+    </mesh>
+    
     {/* Directional Arrow (Front) */}
     <group position={[0, -0.4, -1.8]} rotation={[-Math.PI / 2, 0, 0]}>
       <Cone args={[0.2, 0.4, 4]} position={[0, 0.2, 0]}>
-        <meshBasicMaterial color="#38bdf8" opacity={0.5} transparent wireframe />
+        <meshBasicMaterial color="#39ff14" opacity={0.6} transparent wireframe />
       </Cone>
       <Box args={[0.1, 0.5, 0.1]} position={[0, -0.2, 0]}>
-        <meshBasicMaterial color="#38bdf8" opacity={0.5} transparent wireframe />
+        <meshBasicMaterial color="#39ff14" opacity={0.6} transparent wireframe />
       </Box>
     </group>
   </group>
 );
 
+const BoundingBox = ({ position, isAdult, name }: { position: [number, number, number], isAdult: boolean, name: string }) => {
+  // Adult bounding box is larger, Child is smaller
+  const size = isAdult ? [0.6, 0.8, 0.6] : [0.4, 0.5, 0.4];
+  const color = isAdult ? "#3b82f6" : "#ec4899"; // Blue for Adult, Pink for Child
+  const bpm = isAdult ? 15 : 42;
+  const conf = isAdult ? "98%" : "94%";
+
+  return (
+    <group position={position}>
+      <Box args={size as [number, number, number]}>
+        <meshBasicMaterial color={color} wireframe opacity={0.3} transparent />
+      </Box>
+      <Html position={[0, size[1] / 2 + 0.1, 0]} center>
+        <div className={`whitespace-nowrap px-2 py-1 rounded bg-black/80 backdrop-blur border text-[10px] font-mono font-bold tracking-wider uppercase text-white shadow-lg ${isAdult ? 'border-blue-500' : 'border-pink-500'}`}>
+          <div className="flex justify-between gap-3 mb-0.5">
+            <span>{name}</span>
+            <span className="opacity-70">CONF {conf}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[9px] opacity-80">
+            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isAdult ? 'bg-blue-400' : 'bg-pink-400'}`}></span>
+            {bpm} BPM Resp
+          </div>
+        </div>
+      </Html>
+    </group>
+  );
+};
+
 export const Cabin3DView = ({ targets }: { targets: Target[] }) => {
-  const [sensorPos, setSensorPos] = useState<'mirror' | 'dome'>('mirror');
+  const [sensorPos, setSensorPos] = useState<'roof' | 'windshield' | 'bpillar'>('roof');
   
-  const sensorY = sensorPos === 'mirror' ? 0.5 : 0.8;
-  const sensorZ = sensorPos === 'mirror' ? 0.0 : 0.6; // Mirror is front, dome is middle
+  // Spec coordinates map to ThreeJS coordinates: (x, z, -y) or similar.
+  // We'll keep our current coordinate space but just define the sensor points:
+  let sensorCoords: [number, number, number] = [0, 0.6, 0.5]; // Default Roof
+  if (sensorPos === 'windshield') sensorCoords = [0, 0.4, -0.2];
+  if (sensorPos === 'bpillar') sensorCoords = [-0.75, 0.4, 0.5];
 
   return (
     <div className="w-full h-full bg-slate-950 rounded-lg overflow-hidden relative">
@@ -196,16 +246,22 @@ export const Cabin3DView = ({ targets }: { targets: Target[] }) => {
         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live 3D Radar Point Cloud</span>
         <div className="flex gap-2">
           <button 
-            onClick={() => setSensorPos('mirror')}
-            className={`text-[9px] px-2 py-1 rounded border uppercase font-bold tracking-wider transition-colors ${sensorPos === 'mirror' ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
+            onClick={() => setSensorPos('roof')}
+            className={`text-[9px] px-2 py-1 rounded border uppercase font-bold tracking-wider transition-colors ${sensorPos === 'roof' ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
           >
-            Rearview Mirror
+            Roof-Center
           </button>
           <button 
-            onClick={() => setSensorPos('dome')}
-            className={`text-[9px] px-2 py-1 rounded border uppercase font-bold tracking-wider transition-colors ${sensorPos === 'dome' ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
+            onClick={() => setSensorPos('windshield')}
+            className={`text-[9px] px-2 py-1 rounded border uppercase font-bold tracking-wider transition-colors ${sensorPos === 'windshield' ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
           >
-            Dome Light
+            Windshield
+          </button>
+          <button 
+            onClick={() => setSensorPos('bpillar')}
+            className={`text-[9px] px-2 py-1 rounded border uppercase font-bold tracking-wider transition-colors ${sensorPos === 'bpillar' ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
+          >
+            B-Pillar
           </button>
         </div>
       </div>
@@ -216,9 +272,10 @@ export const Cabin3DView = ({ targets }: { targets: Target[] }) => {
         <pointLight position={[0, 2, 0]} intensity={1} color="#e2e8f0" />
         
         {/* Radar Sensor Origin */}
-        <Box args={[0.1, 0.05, 0.05]} position={[0, sensorY, sensorZ]}>
-          <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={0.5} />
-        </Box>
+        <mesh position={sensorCoords}>
+          <sphereGeometry args={[0.08, 16, 16]} />
+          <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.5} />
+        </mesh>
         
         <gridHelper args={[4, 10, '#334155', '#0f172a']} position={[0, -0.5, 1]} />
         
@@ -230,14 +287,18 @@ export const Cabin3DView = ({ targets }: { targets: Target[] }) => {
         <Seat position={[-0.35, -0.3, 1.4]} hasInfant={targets.some(t => t.name.includes('Infant') && t.name.includes('Back Left'))} />
         <Seat position={[0.35, -0.3, 1.4]} hasInfant={targets.some(t => t.name.includes('Infant') && t.name.includes('Back Right'))} />
 
-        {/* Target Point Clouds */}
-        {targets.map((t, idx) => (
-          <PointCloud 
-            key={idx} 
-            position={t.pos} 
-            isAdult={t.name.includes('Adult')} 
-          />
-        ))}
+        {/* Target Point Clouds & Bounding Boxes */}
+        {targets.map((t, idx) => {
+           const isAdult = t.name.includes('Adult');
+           // Center bounding box slightly above seat
+           const bboxY = isAdult ? t.pos[1] + 0.3 : t.pos[1] + 0.1;
+           return (
+             <group key={idx}>
+               <PointCloud position={t.pos} isAdult={isAdult} />
+               <BoundingBox position={[t.pos[0], bboxY, t.pos[2]]} isAdult={isAdult} name={t.name} />
+             </group>
+           );
+        })}
 
         <OrbitControls 
           makeDefault 
