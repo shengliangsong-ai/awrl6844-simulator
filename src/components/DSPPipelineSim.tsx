@@ -100,6 +100,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     await new Promise(r => setTimeout(r, 400));
     
     // Radar Parameters for translation
+    // The AWRL6844 outputs a 57-64 GHz continuous FMCW sweep via its analog TX/RX chains.
+    // We are simulating the digitized IF (intermediate frequency) beat signal here, 
+    // exactly as it arrives at the ADC buffer after analog downconversion.
     const maxRange = 5.0; // meters (reduced to increase resolution inside cabin)
     const maxVelocity = 2.0; // m/s (Nyquist for micro-doppler)
     
@@ -256,11 +259,11 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       title: "Stage 0: ADC Buffer",
       input: "Analog IF Signal",
       output: "Raw ADC Samples",
-      inFormat: "Continuous FMCW waveform from RF frontend.",
+      inFormat: "Continuous FMCW waveform from RF frontend (Synthesized ~60GHz beat signal).",
       outFormat: `12-bit real/complex integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples].`,
       memory: "HWA ACCEL_MEM (0x05100000)",
       math: "V_{in} = \\text{ADC\\_Code} \\times \\frac{1.8\\text{ V}}{2^{11}}",
-      desc: "The Analog-to-Digital Converter samples the 4 physical receiver channels simultaneously at rates up to 25 Msps (real-only baseband stage)."
+      desc: "The hardware fractional-N PLL generates a ~60GHz chirp via the analog TX chain. The reflected analog signal is mixed with the transmitted chirp to create an IF beat frequency, which the ADC samples at 25 Msps."
     },
     1: {
       title: "Stage 1: 1D Range FFT",
