@@ -133,7 +133,7 @@ export const StagePlot = ({ stage, state }: { stage: number, state: any }) => {
             <LineChart width={600} height={250} data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="bin" stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Range Bin', position: 'insideBottom', offset: -5, fill: '#64748b', fontSize: 10 }} />
-              <YAxis stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Magnitude', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 10 }} />
+              <YAxis stroke="#64748b" tick={{fontSize: 10}} label={{ value: 'Relative Power (dB)', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 10 }} />
               <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '12px' }} />
               <Line type="monotone" dataKey="power" stroke="#10b981" dot={false} strokeWidth={2} />
             </LineChart>

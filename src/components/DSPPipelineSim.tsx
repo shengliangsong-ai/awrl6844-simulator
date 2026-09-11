@@ -38,17 +38,17 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   
   const getTargetsForConfiguration = (config: SeatConfig) => {
     const t = [];
-    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 25, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
-    if (config.FL === 'infant') t.push({ range: 0.95, velocity: 0.35, rcs: 18, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.95] });
+    if (config.FL === 'adult') t.push({ range: 0.8, velocity: 0.15, rcs: 1.0, name: 'Adult (Front Left)', pos: [-0.35, -0.2, 0.8] });
+    if (config.FL === 'infant') t.push({ range: 0.95, velocity: 0.35, rcs: 0.5, name: 'Infant (Front Left)', pos: [-0.35, -0.4, 0.95] });
     
-    if (config.FR === 'adult') t.push({ range: 0.85, velocity: 0.12, rcs: 25, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.85] });
-    if (config.FR === 'infant') t.push({ range: 1.0, velocity: 0.32, rcs: 18, name: 'Infant (Front Right)', pos: [0.35, -0.4, 1.0] });
+    if (config.FR === 'adult') t.push({ range: 0.85, velocity: 0.12, rcs: 1.0, name: 'Adult (Front Right)', pos: [0.35, -0.2, 0.85] });
+    if (config.FR === 'infant') t.push({ range: 1.0, velocity: 0.32, rcs: 0.5, name: 'Infant (Front Right)', pos: [0.35, -0.4, 1.0] });
     
-    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 25, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
-    if (config.BL === 'infant') t.push({ range: 1.55, velocity: 0.38, rcs: 18, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.55] });
+    if (config.BL === 'adult') t.push({ range: 1.4, velocity: 0.18, rcs: 1.0, name: 'Adult (Back Left)', pos: [-0.35, -0.1, 1.4] });
+    if (config.BL === 'infant') t.push({ range: 1.55, velocity: 0.38, rcs: 0.5, name: 'Infant (Back Left)', pos: [-0.35, -0.3, 1.55] });
     
-    if (config.BR === 'adult') t.push({ range: 1.45, velocity: 0.14, rcs: 25, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.45] });
-    if (config.BR === 'infant') t.push({ range: 1.6, velocity: 0.34, rcs: 18, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.6] });
+    if (config.BR === 'adult') t.push({ range: 1.45, velocity: 0.14, rcs: 1.0, name: 'Adult (Back Right)', pos: [0.35, -0.1, 1.45] });
+    if (config.BR === 'infant') t.push({ range: 1.6, velocity: 0.34, rcs: 0.5, name: 'Infant (Back Right)', pos: [0.35, -0.3, 1.6] });
     return t;
   };
 
@@ -107,10 +107,11 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     const maxVelocity = 2.0; // m/s (Nyquist for micro-doppler)
     
     // Define static cabin clutter that is ALWAYS present in a car (seats, dashboard)
+    // Values derived from TI mmWave Demo Visualizer User's Guide (Car = 10, Motorcycle = 3.2, etc.)
     const staticClutter = [
-      { range: 0.4, velocity: 0, rcs: 32, name: 'Dashboard' },
-      { range: 0.85, velocity: 0, rcs: 28, name: 'Front Seats' },
-      { range: 1.45, velocity: 0, rcs: 26, name: 'Rear Seats' },
+      { range: 0.4, velocity: 0, rcs: 10.0, name: 'Dashboard' },
+      { range: 0.85, velocity: 0, rcs: 3.0, name: 'Front Seats' },
+      { range: 1.45, velocity: 0, rcs: 3.0, name: 'Rear Seats' },
     ];
     const allTargets = [...targets, ...staticClutter];
     
@@ -130,8 +131,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           const rFreq = (t.range / maxRange) * (rangeBins / 2); // Normalized range frequency
           const dFreq = (t.velocity / maxVelocity) * (dopplerBins / 2); // Normalized doppler frequency
           
-          // Amplitude scaled by RCS
-          const amp = Math.pow(10, t.rcs / 10.0);
+          // Amplitude scaled by RCS (Using linear scale * an arbitrary factor to rise above noise)
+          const amp = t.rcs * 250.0;
           
           // Phase = 2*PI * (range_freq * sample_idx / N + doppler_freq * chirp_idx / M)
           const phase = 2 * Math.PI * ((rFreq * samp) / rangeBins + (dFreq * chirp) / dopplerBins);
@@ -180,7 +181,9 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     const validRangeBins = rangeBins / 2;
     const rangeFFTMag = new Array(validRangeBins);
     for (let s = 0; s < validRangeBins; s++) {
-      rangeFFTMag[s] = Math.sqrt(rawSignalReal[0][s]**2 + rawSignalImag[0][s]**2);
+      const mag = Math.sqrt(rawSignalReal[0][s]**2 + rawSignalImag[0][s]**2);
+      // TI mmWave Demo Visualizer defaults to plotting the Range Profile in Log Scale (dB)
+      rangeFFTMag[s] = mag > 1e-10 ? 20 * Math.log10(mag) : 0;
     }
     
     // =========================================================================
@@ -277,14 +280,14 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       desc: "The hardware fractional-N PLL generates a ~60GHz chirp via the analog TX chain. The reflected analog signal is mixed with the transmitted chirp to create an IF beat frequency, which the ADC samples at 25 Msps."
     },
     1: {
-      title: "Stage 1: 1D Range FFT",
+      title: "Stage 1: 1D Range FFT (Range Profile)",
       input: "Raw ADC Samples",
       output: "Range Profile",
       inFormat: "16-bit ADC samples fetched via EDMA.",
       outFormat: `24-bit Complex I/Q fixed-point values. Computed via Radix-2 butterfly. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [128 Range Bins].`,
       memory: "HWA M0/M1/M2/M3 RAM",
-      math: "X[k] = \\sum_{n=0}^{N-1} \\left( x[n] \\cdot w[n] \\right) e^{-j\\frac{2\\pi}{N}nk} \\quad \\rightarrow \\quad X_{scaled}[k] = X[k] \\times 2^{-S}",
-      desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 24-bit complex 1D FFT with radix-2 butterfly right-shift scaling (S)."
+      math: "X[k] = \\sum_{n=0}^{N-1} \\left( x[n] \\cdot w[n] \\right) e^{-j\\frac{2\\pi}{N}nk} \\quad \\rightarrow \\quad X_{dB}[k] = 20 \\log_{10}(|X[k]|)",
+      desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 1D FFT. The resulting 'Range Profile' (plotted here in Log Scale for the 0th Doppler bin) shows the relative power of targets at different distances."
     },
     2: {
       title: "Stage 2: 2D Doppler FFT",
