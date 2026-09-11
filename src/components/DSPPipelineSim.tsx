@@ -106,6 +106,14 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     const maxRange = 5.0; // meters (reduced to increase resolution inside cabin)
     const maxVelocity = 2.0; // m/s (Nyquist for micro-doppler)
     
+    // Define static cabin clutter that is ALWAYS present in a car (seats, dashboard)
+    const staticClutter = [
+      { range: 0.4, velocity: 0, rcs: 32, name: 'Dashboard' },
+      { range: 0.85, velocity: 0, rcs: 28, name: 'Front Seats' },
+      { range: 1.45, velocity: 0, rcs: 26, name: 'Rear Seats' },
+    ];
+    const allTargets = [...targets, ...staticClutter];
+    
     // Create a 2D array [chirp][sample] of complex numbers
     // In hardware, this is interleaved I/Q or real-only. We'll use complex for simplicity.
     const rawSignalReal = Array(dopplerBins).fill(0).map(() => Array(rangeBins).fill(0));
@@ -117,7 +125,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
         let realSum = 0;
         let imagSum = 0;
         
-        targets.forEach(t => {
+        allTargets.forEach(t => {
           // Normalize to bin indices (frequencies)
           const rFreq = (t.range / maxRange) * (rangeBins / 2); // Normalized range frequency
           const dFreq = (t.velocity / maxVelocity) * (dopplerBins / 2); // Normalized doppler frequency
@@ -132,8 +140,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           imagSum += amp * Math.sin(phase);
         });
         
-        // Add AWGN (Noise)
-        const noiseFloor = 0.5; // Lowered noise floor
+        // Add AWGN (Noise) - significantly increased to show realistic entropy
+        const noiseFloor = 150; 
         realSum += (Math.random() - 0.5) * noiseFloor;
         imagSum += (Math.random() - 0.5) * noiseFloor;
         
@@ -235,13 +243,16 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
     await new Promise(r => setTimeout(r, 400));
     
     // Convert bin indices back to physical units for display
-    const finalClusters = detections.map(det => ({
-      r: det.r,
-      d: det.d,
-      range_m: (det.r / (rangeBins / 2)) * maxRange,
-      velocity_m_s: ((det.d - dopplerBins / 2) / (dopplerBins / 2)) * maxVelocity,
-      power_db: det.pwr
-    }));
+    // DSP Step: Filter out static clutter (0 m/s micro-doppler) to isolate living occupants
+    const finalClusters = detections
+      .map(det => ({
+        r: det.r,
+        d: det.d,
+        range_m: (det.r / (rangeBins / 2)) * maxRange,
+        velocity_m_s: ((det.d - dopplerBins / 2) / (dopplerBins / 2)) * maxVelocity,
+        power_db: det.pwr
+      }))
+      .filter(cluster => Math.abs(cluster.velocity_m_s) > 0.05); // Filter out zero-velocity targets
     
     setState({
       adcRaw: adcRawDisplay,
@@ -302,8 +313,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
       inFormat: "Sparse list of CFAR peaks.",
       outFormat: "Structured object tracks: [X (m), Y (m), Z (m), Velocity (m/s), SNR (dB)]. Sent over CAN-FD / UART.",
       memory: "C66x DSP internal structures",
-      math: "\\theta = \\arcsin\\left( \\frac{\\Delta\\phi \\cdot \\lambda}{2\\pi \\cdot d} \\right)",
-      desc: "The C66x DSP processes detected peaks to resolve Angle-of-Arrival (AoA) across virtual antennas, then clusters point clouds using algorithms like DBSCAN."
+      math: "\\text{if } |v| \\approx 0 \\text{ then } \\text{Discard (Static Clutter)}",
+      desc: "The C66x DSP processes the peaks. First, it discards static targets (0 m/s velocity) like the dashboard and empty seats. Then, it resolves Angle-of-Arrival (AoA) for the moving targets and clusters the remaining points into living occupants."
     }
   };
 
