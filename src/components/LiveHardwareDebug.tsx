@@ -7,8 +7,15 @@ export const LiveHardwareDebug: React.FC = () => {
   const [connType, setConnType] = useState<ConnectionType>('uart');
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Connection Settings State
+  const [uartBaud, setUartBaud] = useState('921600');
+  const [canNominal, setCanNominal] = useState('1000000');
+  const [canData, setCanData] = useState('5000000');
+  const [jtagProxy, setJtagProxy] = useState('ws://127.0.0.1:8080/jtag');
+
   const [logs, setLogs] = useState<string[]>([
-    "System Ready. Select an interface to connect to the AWRL684x EVM."
+    "System Ready. Select an interface and configure settings to connect to the AWRL684x EVM."
   ]);
   const [regAddr, setRegAddr] = useState('0x88000000');
   const [regVal, setRegVal] = useState('0x00000000');
@@ -33,8 +40,9 @@ export const LiveHardwareDebug: React.FC = () => {
       try {
         // Attempt to use real WebSerial API if available
         if ('serial' in navigator) {
+          setLogs(prev => [...prev, `[UART] Prompting user to select COM port via Browser Security Sandbox...`]);
           const port = await (navigator as any).serial.requestPort();
-          setLogs(prev => [...prev, `[UART] Port selected successfully. Opening at 921600 baud...`]);
+          setLogs(prev => [...prev, `[UART] Port selected successfully. Opening at ${uartBaud} baud...`]);
           await new Promise(r => setTimeout(r, 800)); // Simulate negotiation
           setLogs(prev => [...prev, `[UART] Connected to DSS_UARTA_TX (Debug UART).`]);
           setIsConnected(true);
@@ -45,15 +53,22 @@ export const LiveHardwareDebug: React.FC = () => {
         setLogs(prev => [...prev, `[ERROR] ${e.message}. Falling back to mock connection...`]);
         await new Promise(r => setTimeout(r, 1000));
         setIsConnected(true);
-        setLogs(prev => [...prev, `[MOCK] Connected to virtual AWRL6844 device.`]);
+        setLogs(prev => [...prev, `[MOCK] Connected to virtual AWRL6844 device at ${uartBaud} baud.`]);
       }
-    } else {
-      // CAN and JTAG require a local proxy agent
+    } else if (connType === 'can') {
+      await new Promise(r => setTimeout(r, 1000));
+      setLogs(prev => [
+        ...prev, 
+        `[CAN-FD] Connecting via local proxy. Nominal Rate: ${Number(canNominal)/1000}kbps, Data Rate: ${Number(canData)/1000000}Mbps...`,
+        `[MOCK] Proxy connection established. Target: AWRL6844_ES2.0.`
+      ]);
+      setIsConnected(true);
+    } else if (connType === 'jtag') {
       await new Promise(r => setTimeout(r, 1500));
       setLogs(prev => [
         ...prev, 
-        `[${connType.toUpperCase()}] Searching for local hardware proxy bridge (localhost:8080)...`,
-        `[MOCK] Proxy connection established. Target: AWRL6844_ES2.0.`
+        `[JTAG] Browser cannot access XDS110 directly. Connecting to local debug proxy at ${jtagProxy}...`,
+        `[MOCK] OpenOCD / TI Cloud Agent bridge responded. Halt state: FALSE. Target: Cortex-R5F & C66x.`
       ]);
       setIsConnected(true);
     }
@@ -89,7 +104,7 @@ export const LiveHardwareDebug: React.FC = () => {
           <div className="flex flex-col gap-2 mb-6">
             <button 
               onClick={() => !isConnected && setConnType('uart')}
-              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'uart' ? 'bg-indigo-900/40 border-indigo-500/50 text-indigo-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'uart' ? 'bg-indigo-900/40 border-indigo-500/50 text-indigo-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected && connType !== 'uart' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div>
                 <div className="font-bold text-sm">UART (WebSerial)</div>
@@ -97,10 +112,26 @@ export const LiveHardwareDebug: React.FC = () => {
               </div>
               <Terminal className="w-4 h-4 opacity-50" />
             </button>
+            {connType === 'uart' && (
+              <div className="px-3 pb-3 mb-2 -mt-1 animate-in slide-in-from-top-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Baud Rate</label>
+                <select 
+                  value={uartBaud} 
+                  onChange={(e) => setUartBaud(e.target.value)}
+                  disabled={isConnected}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                >
+                  <option value="115200">115200 (CFG Port)</option>
+                  <option value="921600">921600 (Data Port Default)</option>
+                  <option value="1834000">1834000 (High Speed)</option>
+                  <option value="3125000">3125000 (Max Speed)</option>
+                </select>
+              </div>
+            )}
             
             <button 
               onClick={() => !isConnected && setConnType('can')}
-              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'can' ? 'bg-emerald-900/40 border-emerald-500/50 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'can' ? 'bg-emerald-900/40 border-emerald-500/50 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected && connType !== 'can' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div>
                 <div className="font-bold text-sm">CAN-FD</div>
@@ -108,10 +139,38 @@ export const LiveHardwareDebug: React.FC = () => {
               </div>
               <Activity className="w-4 h-4 opacity-50" />
             </button>
+            {connType === 'can' && (
+              <div className="px-3 pb-3 mb-2 -mt-1 animate-in slide-in-from-top-2 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nominal</label>
+                  <select 
+                    value={canNominal} 
+                    onChange={(e) => setCanNominal(e.target.value)}
+                    disabled={isConnected}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                  >
+                    <option value="500000">500 kbps</option>
+                    <option value="1000000">1 Mbps</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Data Rate</label>
+                  <select 
+                    value={canData} 
+                    onChange={(e) => setCanData(e.target.value)}
+                    disabled={isConnected}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                  >
+                    <option value="2000000">2 Mbps</option>
+                    <option value="5000000">5 Mbps</option>
+                  </select>
+                </div>
+              </div>
+            )}
             
             <button 
               onClick={() => !isConnected && setConnType('jtag')}
-              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'jtag' ? 'bg-rose-900/40 border-rose-500/50 text-rose-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${connType === 'jtag' ? 'bg-rose-900/40 border-rose-500/50 text-rose-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'} ${isConnected && connType !== 'jtag' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div>
                 <div className="font-bold text-sm">JTAG (XDS110)</div>
@@ -119,6 +178,19 @@ export const LiveHardwareDebug: React.FC = () => {
               </div>
               <Cpu className="w-4 h-4 opacity-50" />
             </button>
+            {connType === 'jtag' && (
+              <div className="px-3 pb-3 mb-2 -mt-1 animate-in slide-in-from-top-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Local Proxy Agent URL</label>
+                <input 
+                  type="text"
+                  value={jtagProxy} 
+                  onChange={(e) => setJtagProxy(e.target.value)}
+                  disabled={isConnected}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-rose-500 disabled:opacity-50 font-mono"
+                />
+                <p className="text-[9px] text-slate-500 mt-1">Browser sandbox prevents direct USB/JTAG. Requires TI Cloud Agent or custom GDB/OpenOCD proxy on localhost.</p>
+              </div>
+            )}
           </div>
 
           <button 
