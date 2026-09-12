@@ -41,7 +41,10 @@ export const LiveHardwareDebug: React.FC = () => {
         // Attempt to use real WebSerial API if available
         if ('serial' in navigator) {
           setLogs(prev => [...prev, `[UART] Prompting user to select COM port via Browser Security Sandbox...`]);
-          const port = await (navigator as any).serial.requestPort();
+          // Filter for Texas Instruments XDS110 devices (VID: 0x0451) to make selection easier
+          const port = await (navigator as any).serial.requestPort({
+            filters: [{ usbVendorId: 0x0451 }]
+          });
           setLogs(prev => [...prev, `[UART] Port selected successfully. Opening at ${uartBaud} baud...`]);
           await new Promise(r => setTimeout(r, 800)); // Simulate negotiation
           setLogs(prev => [...prev, `[UART] Connected to DSS_UARTA_TX (Debug UART).`]);
