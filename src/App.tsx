@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity, Server } from 'lucide-react';
 import { Simulator } from './lib/simulator';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { DocViewer } from './components/DocViewer';
 import { DSPPipelineSim } from './components/DSPPipelineSim';
+import { LiveHardwareDebug } from './components/LiveHardwareDebug';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -57,6 +58,7 @@ export const PWAInstallButton: React.FC = () => {
 };
 
 export default function App() {
+  const [appMode, setAppMode] = useState<'sim' | 'hardware'>('sim');
   const [sim] = useState(() => new Simulator());
   const [, setTick] = useState(0);
   const [inspectAddr, setInspectAddr] = useState('88000000');
@@ -232,7 +234,23 @@ export default function App() {
       <header className="border-b border-slate-800 bg-slate-900/50 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="text-blue-500 w-6 h-6" />
-          <h1 className="text-lg font-bold text-slate-100">{sim.mmu.socType} Simulator Engine</h1>
+          <h1 className="text-lg font-bold text-slate-100">{sim.mmu.socType} Radar Toolkit</h1>
+          
+          <div className="flex bg-slate-950 rounded-lg p-1 ml-4 border border-slate-800">
+            <button 
+              onClick={() => setAppMode('sim')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${appMode === 'sim' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              Simulation Engine
+            </button>
+            <button 
+              onClick={() => setAppMode('hardware')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ${appMode === 'hardware' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <Server className="w-3 h-3" /> Live Hardware Debug
+            </button>
+          </div>
+
           <button 
             onClick={() => setShowDocs(true)}
             className="flex items-center gap-2 ml-4 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
@@ -271,8 +289,13 @@ export default function App() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        
-        <aside className="w-80 border-r border-slate-800 bg-slate-900/30 p-4 overflow-y-auto flex flex-col gap-6">
+        {appMode === 'hardware' ? (
+          <div className="w-full p-4 overflow-y-auto">
+            <LiveHardwareDebug />
+          </div>
+        ) : (
+          <>
+            <aside className="w-80 border-r border-slate-800 bg-slate-900/30 p-4 overflow-y-auto flex flex-col gap-6">
           
           <section>
             <h2 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
@@ -738,6 +761,8 @@ export default function App() {
           </div>
 
         </main>
+          </>
+        )}
       </div>
     </div>
   );
