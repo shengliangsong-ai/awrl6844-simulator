@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity, Server } from 'lucide-react';
+import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity, Server, Database } from 'lucide-react';
 import { Simulator } from './lib/simulator';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { DocViewer } from './components/DocViewer';
 import { DSPPipelineSim } from './components/DSPPipelineSim';
 import { LiveHardwareDebug } from './components/LiveHardwareDebug';
+import { InteractiveRegisterMap } from './components/InteractiveRegisterMap';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -58,7 +59,7 @@ export const PWAInstallButton: React.FC = () => {
 };
 
 export default function App() {
-  const [appMode, setAppMode] = useState<'sim' | 'hardware'>('sim');
+  const [appMode, setAppMode] = useState<'sim' | 'hardware' | 'registers'>('sim');
   const [sim] = useState(() => new Simulator());
   const [, setTick] = useState(0);
   const [inspectAddr, setInspectAddr] = useState('88000000');
@@ -244,6 +245,12 @@ export default function App() {
               Simulation Engine
             </button>
             <button 
+              onClick={() => setAppMode('registers')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ${appMode === 'registers' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <Database className="w-3 h-3" /> Register Map
+            </button>
+            <button 
               onClick={() => setAppMode('hardware')}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ${appMode === 'hardware' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
             >
@@ -289,7 +296,11 @@ export default function App() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {appMode === 'hardware' ? (
+        {appMode === 'registers' ? (
+          <div className="w-full h-full p-4 overflow-hidden">
+            <InteractiveRegisterMap sim={sim} />
+          </div>
+        ) : appMode === 'hardware' ? (
           <div className="w-full p-4 overflow-y-auto">
             <LiveHardwareDebug sim={sim} />
           </div>

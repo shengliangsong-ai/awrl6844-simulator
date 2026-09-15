@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+
+<module description="" id="APP_RCM">
+  
+  
+  <register acronym="PID" description=" PID register " id="PID" offset="0x0" width="32">
+    
+  <bitfield begin="31" description="" end="16" id="" rwaccess="R" width="16"></bitfield>
+    
+  <bitfield begin="15" description="" end="11" id="" rwaccess="R" width="5"></bitfield>
+    
+  <bitfield begin="10" description="" end="8" id="" rwaccess="R" width="3"></bitfield>
+    
+  <bitfield begin="7" description="" end="6" id="" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="5" description="" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_CPU_CLKCTL" description="" id="APP_CPU_CLKCTL" offset="0x4" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="Select the source clock: 0x0 : OSC_CLK 0x1 : SLOW_CLK 0x2 : SLOW_CLK 0x3 : FAST_CLK1 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="Reserved" end="0" id="RESERVED" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_CPU_CLKSTAT" description="" id="APP_CPU_CLKSTAT" offset="0x8" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : SLOW_CLK 0x4 : SLOW_CLK 0x8 : FAST_CLK1 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_CAN_CLKCTL" description="" id="APP_CAN_CLKCTL" offset="0xC" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : OSC_CLKX2 0x2 : SLOW_CLK 0x3 : FAST_CLK1 0x4 : CAN_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLKFor other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_CAN_CLKSTAT" description="" id="APP_CAN_CLKSTAT" offset="0x10" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : OSC_CLKX2 0x4 : SLOW_CLK 0x8 : FAST_CLK1 0x10 : CAN_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_SPI_CLKCTL" description="" id="APP_SPI_CLKCTL" offset="0x14" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : OSC_CLKX2 0x2 : SLOW_CLK 0x3 : FAST_CLK1 0x4 : CAN_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_SPI_CLKSTAT" description="" id="APP_SPI_CLKSTAT" offset="0x18" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : OSC_X2 0x4 : SLOW_CLK 0x8 : FAST_CLK1 0x10 : CAN_CLK 0x20 : SLOW_CLK  0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_SPI_BUSIF_CLKCTL" description="" id="APP_SPI_BUSIF_CLKCTL" offset="0x1C" width="32">
+    
+  <bitfield begin="11" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="0" id="DIVR" rwaccess="RW" width="12"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_SPI_BUSIF_CLKSTAT" description="" id="APP_SPI_BUSIF_CLKSTAT" offset="0x20" width="32">
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_QSPI_CLKCTL" description="" id="APP_QSPI_CLKCTL" offset="0x24" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : OSC_CLKX2 0x2 : PLLDIG_CLK 0x3 : FAST_CLK1 0x4 : CAN_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_QSPI_CLKSTAT" description="" id="APP_QSPI_CLKSTAT" offset="0x28" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : OSC_CLKX2 0x4 : PLLGID_CLK 0x8 : FAST_CLK1 0x10 : CAN_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0X80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="TOPSS_CLKCTL" description="" id="TOPSS_CLKCTL" offset="0x2C" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : SLOW_CLK 0x2 : SLOW_CLK 0x3 : FAST_CLK1 0x4 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x15 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="TOPSS_CLKSTAT" description="" id="TOPSS_CLKSTAT" offset="0x30" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : SLOW_CLK 0x4 : SLOW_CLK 0x8 : FAST_CLK1 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_RTI_CLKCTL" description="" id="APP_RTI_CLKCTL" offset="0x34" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : XREF_IN 0x2 : OSC_CLK  (Ungated OSC_CLK for RTI in Sleep mode) 0x3 : SLOW_CLK 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_RTI_CLKSTAT" description="" id="APP_RTI_CLKSTAT" offset="0x38" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN 0x4 : OSC_CLK (ungated OSC_CLK for RTI in sleep mode) 0x8 : SLOW_CLK 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_WD_CLKCTL" description="" id="APP_WD_CLKCTL" offset="0x3C" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : XREF_IN 0x2 : OSC_CLK 0x3 : SLOW_CLK 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_WD_CLKSTAT" description="" id="APP_WD_CLKSTAT" offset="0x40" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN 0x4 : OSC_CLK  0x8 : SLOW_CLK 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK " end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_UART_0_CLKCTL" description="" id="APP_UART_0_CLKCTL" offset="0x44" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="0x0 : OSC_CLK 0x1 : FAST_CLK1 For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x1 should be selected then 0x111 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_UART_0_CLKSTAT" description="" id="APP_UART_0_CLKSTAT" offset="0x48" width="32">
+    
+  <bitfield begin="5" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : FAST_CLK1 " end="4" id="CURRCLK" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_UART_1_CLKCTL" description="" id="APP_UART_1_CLKCTL" offset="0x4C" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="0x0 : OSC_CLK 0x1 : FAST_CLK1 For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x1 should be selected then 0x111 should be configured to the register" end="4" id="SRCSEL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_UART_1_CLKSTAT" description="" id="APP_UART_1_CLKSTAT" offset="0x50" width="32">
+    
+  <bitfield begin="5" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : FAST_CLK1" end="4" id="CURRCLK" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_I2C_CLKCTL" description="" id="APP_I2C_CLKCTL" offset="0x54" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_I2C_CLKSTAT" description="" id="APP_I2C_CLKSTAT" offset="0x58" width="32">
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_LIN_CLKCTL" description="" id="APP_LIN_CLKCTL" offset="0x5C" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="0x0 : OSC_CLK 0x1 : FAST_CLK1 For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x1 should be selected then 0x111 should be configured to the register" end="4" id="SRCSEL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_LIN_CLKSTAT" description="" id="APP_LIN_CLKSTAT" offset="0x60" width="32">
+    
+  <bitfield begin="5" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : FAST_CLK1" end="4" id="CURRCLK" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED0" description="" id="RESERVED0" offset="0x64" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="24" id="WPHRES" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Reserved" end="8" id="RORES" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Reserved" end="0" id="RWRES" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED1" description="" id="RESERVED1" offset="0x68" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="24" id="WPHRES" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Reserved" end="8" id="RORES" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Reserved" end="0" id="RWRES" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED2" description="" id="RESERVED2" offset="0x6C" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="24" id="WPHRES" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Reserved" end="8" id="RORES" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Reserved" end="0" id="RWRES" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED3" description="" id="RESERVED3" offset="0x70" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="24" id="WPHRES" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Reserved" end="8" id="RORES" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Reserved" end="0" id="RWRES" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="IPCFGCLKGATE0" description="" id="IPCFGCLKGATE0" offset="0x74" width="32">
+    
+  <bitfield begin="29" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="27" id="APP_I2C" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="23" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="21" id="APP_WD" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="18" id="APP_RTI" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="17" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="15" id="APP_ESM" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="12" id="TPCC_A" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="9" id="TPTC_A1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="6" id="TPTC_A0" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="3" id="APP_QSPI" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Reserved Setting this bit does not cause any affect to any logic" end="0" id="XBARA" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="IPCFGCLKGATE1" description="" id="IPCFGCLKGATE1" offset="0x78" width="32">
+    
+  <bitfield begin="29" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="27" id="RES" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="26" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="24" id="APP_CTRL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="23" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="21" id="APP_CRC" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="18" id="APP_PWM" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="17" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="15" id="APP_LIN" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="12" id="APP_CAN" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="9" id="APP_SPI_1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="6" id="APP_SPI_0" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="3" id="APP_UART_1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="APP_UART_0" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="IPCFGCLKGATE2" description="" id="IPCFGCLKGATE2" offset="0x7C" width="32">
+    
+  <bitfield begin="17" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="15" id="APP_CANB" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="12" id="PCR6" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="3" id="RS232" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GIO" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="BLOCKRESET0" description="" id="BLOCKRESET0" offset="0x80" width="32">
+    
+  <bitfield begin="29" description="0x0 : Release the reset 0x7 : Assert the reset" end="27" id="APP_I2C" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="23" description="0x0 : Release the reset 0x7 : Assert the reset" end="21" id="APP_WD" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="0x0 : Release the reset 0x7 : Assert the reset" end="18" id="APP_RTI" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="17" description="0x0 : Release the reset 0x7 : Assert the reset" end="15" id="APP_ESM" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="0x0 : Release the reset 0x7 : Assert the reset" end="12" id="TPCC_A" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="0x0 : Release the reset 0x7 : Assert the reset" end="9" id="TPTC_A1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="0x0 : Release the reset 0x7 : Assert the reset" end="6" id="TPTC_A0" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Release the reset 0x7 : Assert the reset" end="3" id="APP_QSPI" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="BLOCKRESET1" description="" id="BLOCKRESET1" offset="0x84" width="32">
+    
+  <bitfield begin="29" description="0x0 : Release the reset 0x7 : Assert the reset" end="27" id="TOPSS" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="26" description="0x0 : Release the reset 0x7 : Assert the reset" end="24" id="APP_CTRL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="23" description="0x0 : Release the reset 0x7 : Assert the reset" end="21" id="APP_CRC" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="0x0 : Release the reset 0x7 : Assert the reset" end="18" id="APP_PWM" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="17" description="0x0 : Release the reset 0x7 : Assert the reset" end="15" id="APP_LIN" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="0x0 : Release the reset 0x7 : Assert the reset" end="12" id="APP_CAN" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="0x0 : Release the reset 0x7 : Assert the reset" end="9" id="APP_SPI_1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="0x0 : Release the reset 0x7 : Assert the reset" end="6" id="APP_SPI_0" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Release the reset 0x7 : Assert the reset" end="3" id="APP_UART_1" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Release the reset 0x7 : Assert the reset" end="0" id="APP_UART_0" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="BLOCKRESET2" description="" id="BLOCKRESET2" offset="0x88" width="32">
+    
+  <bitfield begin="14" description="0x0 : Release the reset 0x7 : Assert the reset" end="12" id="APP_CAN_B" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="0x0 : Release the reset 0x7 : Assert the reset" end="9" id="R5SS_INFRA" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="0x0 : Release the reset 0x7 : Assert the reset" end="6" id="FRC" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="0x0 : Release the reset 0x7 : Assert the reset" end="3" id="RS232" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Reserved" end="0" id="RESERVED" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="PLATFORM_SIGNATURE" description="" id="PLATFORM_SIGNATURE" offset="0x8C" width="32">
+    
+  <bitfield begin="31" description="Platform signature to identify the platform" end="0" id="SIGNATURE" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="POWERMODE" description="" id="POWERMODE" offset="0x90" width="32">
+    
+  <bitfield begin="3" description="CM3 Core Deep Sleep Status" end="3" id="CM3_DEEPSLEEP_STATUS" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="2" description="CM3 Core Sleep Status" end="2" id="CM3_SLEEP_STATUS" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_WFICHECK" description="" id="RST_WFICHECK" offset="0x94" width="32">
+    
+  <bitfield begin="26" description="writing '000' will disable check for WFI before  local reset assertion of CR5A" end="24" id="R5B" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="18" description="writing '000' will disable check for WFI before  local reset assertion of CR5A" end="16" id="R5A" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="10" description="writing '000' will disable check for WFI before  global reset assertion of CR5B" end="8" id="R5SSB" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="writing '000' will disable check for WFI before  global reset assertion of CR5A" end="0" id="R5SSA" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_ASSERTDLY" description="" id="RST_ASSERTDLY" offset="0x98" width="32">
+    
+  <bitfield begin="7" description="Value decides number of cycles reset should be asserted for cpu" end="0" id="COMMON" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST2ASSERTDLY" description="" id="RST2ASSERTDLY" offset="0x9C" width="32">
+    
+  <bitfield begin="31" description="Value decides number of cycles should be held before asserting reset for r5ss local reset for CR5B" end="24" id="R5B" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="23" description="Value decides number of cycles should be held before asserting reset for r5ss local reset for CR5A" end="16" id="R5A" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Value decides number of cycles should be held before asserting reset for r5ss global reset for CR5B" end="8" id="R5SSB" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Value decides number of cycles should be held before asserting reset for r5ss global reset for CR5A." end="0" id="R5SSA" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_FSM_TRIG" description="" id="RST_FSM_TRIG" offset="0xA0" width="32">
+    
+  <bitfield begin="2" description="FSM Reset Trigger" end="0" id="CPU" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_CAUSE" description="" id="RST_CAUSE" offset="0xA4" width="32">
+    
+  <bitfield begin="15" description="Has the status because of which reset has happened.                                        Bit0: POR Reset Bit1: Warm Reset Bit2: STC Reset Bit3  Reset for CR5A and APPSS_CR5A_VIM  using APPSS_RCM::APPSS_CR5SSA_RST_CTRL Bit4: Reset for CR5B and APPSS_CR5B_VIM using APPSS_RCM::APPSS_CR5SSB_RST_CTRL Bit5: Reset for  CR5A only using  APPSS_RCM::APPSS_CR5A_RST_CTRL Bit6: Reset for CR5B only using using APPSS_RCM::APPSS_CR5B_RST_CTRL Bit7: Reset for CR5A and APPSS_CR5A_VIM caused because of reset request  by debugger in CR5A                                                                                                         Bit8:  Reset for CR5B and APPSS_CR5B_VIM caused because of reset request  by debugger in CR5B Bit9: Reset for CR5SS by the RESET FSM  using  APPSS_CTRL::R5_CONTROL_RESET_FSM_TRIGGER" end="0" id="COMMON" rwaccess="R" width="16"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_CAUSE_CLR" description="" id="RST_CAUSE_CLR" offset="0xA8" width="32">
+    
+  <bitfield begin="2" description="Writing '111' will clear the RST_CAUSE register" end="0" id="CPU" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="XTALCLK_CLK_GATE" description="" id="XTALCLK_CLK_GATE" offset="0xAC" width="32">
+    
+  <bitfield begin="2" description="RESERVED" end="0" id="XTALCLK_CLK_GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="XTALCLKX2_CLK_GATE" description="" id="XTALCLKX2_CLK_GATE" offset="0xB0" width="32">
+    
+  <bitfield begin="2" description="Writing 3'b111 will gate the XTALX2 clock.Writing 3'b000 will ungate the clock." end="0" id="XTALCLKX2_CLK_GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="DFT_APPSS_LSTC_CLK_GATE" description="" id="DFT_APPSS_LSTC_CLK_GATE" offset="0xB8" width="32">
+    
+  <bitfield begin="2" description="Writing 3'b111 will gate the clock to LSTC.Writing 3'b000 will ungate the clock." end="0" id="DFT_APPSS_LSTC_CLK_GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="DFT_APPSS_LSTC_VBUSP_CLK_GATE" description="" id="DFT_APPSS_LSTC_VBUSP_CLK_GATE" offset="0xBC" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Gate clock to LSTC VBUSP 3'b111 : Ungate Clock to LSTC VBUSP" end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_ROM_CLOCK_GATE" description="" id="APP_ROM_CLOCK_GATE" offset="0xC0" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to APP TCMA ROM 3'b111 : Gate Clock to APP TCMA ROM" end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_TCMA_RAM_CLOCK_GATE" description="" id="APP_TCMA_RAM_CLOCK_GATE" offset="0xC4" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to APP TCMA RAM 3'b111 : Gate Clock to APP TCMA RAM" end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_TCMB_RAM_CLOCK_GATE" description="" id="APP_TCMB_RAM_CLOCK_GATE" offset="0xC8" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to APP TCMB RAM 3'b111 : Gate Clock to APP TCMB RAM" end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_XBARA_DYNAMIC_CG" description="" id="CFG_XBARA_DYNAMIC_CG" offset="0xD0" width="32">
+    
+  <bitfield begin="2" description="Enable APPSS crossbar dynamic clock gating. 1 - Dynamic clock gating feature is enabled. When the feature is enabed, the CR5 should monitor for any possible pending transactions from various masters like DMA/NWA and if no transaction is expected to be iniated by the masters, the CR5 executes WFI. On ssertion of WFI signal, the clock to crossbar is gated. The clock is automatically ungated under two conditions (i) when the WFI signal is deasserted by any interrupted (ii) when any of the APPSS TPCC triggers are asserted. Instead of WFI, cfg_xbara_set_dynamic_cg also can be used to start the clock gating. 0 - Dynamic clock gating feature is disabled. The clock to APPSS crossbar is not gated dynamically. The clock to APPSS crossbar is gated/ungated as per device ice level power states." end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TPTC_A0_DYNAMIC_CG" description="" id="CFG_TPTC_A0_DYNAMIC_CG" offset="0xD4" width="32">
+    
+  <bitfield begin="2" description="Enable APPSS TPTC_A0 crossbar dynamic clock gating. 1 - Dynamic clock gating feature is enabled. Same behaviour as cfg_xbara_dynamic_cg_en - for both entry to clock gating and exit from clock gating. WFI or cfg_TPTC_A0_set_dynamic_cg 0 - Dynamic clock gating feature is disabled. The clock to APPSS TPTC_A0 crossbar is not gated dynamically. The clock to APPSS TPTC_A0 crossbar is gated/ungated as per device ice level power states." end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TPTC_A1_DYNAMIC_CG" description="" id="CFG_TPTC_A1_DYNAMIC_CG" offset="0xD8" width="32">
+    
+  <bitfield begin="2" description="Enable APPSS TPTC_A1 crossbar dynamic clock gating. 1 - Dynamic clock gating feature is enabled. Same behaviour as cfg_xbara_dynamic_cg_en - for both entry to clock gating and exit from clock gating. WFI or cfg_TPTC_A1_set_dynamic_cg 0 - Dynamic clock gating feature is disabled. The clock to APPSS TPTC_A1 crossbar is not gated dynamically. The clock to APPSS TPTC_A1 crossbar is gated/ungated as per device ice level power states" end="0" id="ENABLE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_XBARA_SET_DYNAMIC_CG" description="" id="CFG_XBARA_SET_DYNAMIC_CG" offset="0xDC" width="32">
+    
+  <bitfield begin="0" description="Start APPSS crossbar dynamic clock gating. This is used instead of WFI. 1 - Start the clock gating. In order to start again, write 0 followed by 1. Rise edge is detected internally, to start the clock gating. 0 - Clock is ungated. Fall edge is detected internally to ungate the clock." end="0" id="SET" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TPTC_A0_SET_DYNAMIC_CG" description="" id="CFG_TPTC_A0_SET_DYNAMIC_CG" offset="0xE0" width="32">
+    
+  <bitfield begin="0" description="Start APPSS TPTC_A0 dynamic clock gating. This is used instead of WFI. 1 - Start the clock gating. In order to start again, write 0 followed by 1. Rise edge is detected internally, to start the clock gating. 0 - Clock is ungated. Fall edge is detected internally to ungate the clock." end="0" id="SET" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TPTC_A1_SET_DYNAMIC_CG" description="" id="CFG_TPTC_A1_SET_DYNAMIC_CG" offset="0xE4" width="32">
+    
+  <bitfield begin="0" description="Start APPSS TPTC_A1 dynamic clock gating. This is used instead of WFI. 1 - Start the clock gating. In order to start again, write 0 followed by 1. Rise edge is detected internally, to start the clock gating. 0 - Clock is ungated. Fall edge is detected internally to ungate the clock." end="0" id="SET" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="LIN_SCI_DIV" description="" id="LIN_SCI_DIV" offset="0xEC" width="32">
+    
+  <bitfield begin="7" description="ICG Based Divider for LIN" end="0" id="VAL" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_LSTC_EN" description="" id="APP_LSTC_EN" offset="0xF0" width="32">
+    
+  <bitfield begin="0" description="Enable vbusp_req and clk_en for app lstc" end="0" id="ENABLE" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="SYSRST_BY_DBG_RST" description="" id="SYSRST_BY_DBG_RST" offset="0xF4" width="32">
+    
+  <bitfield begin="18" description="writing '111'   will block debug reset request from CR5B  toggling globally reset for CR5B" end="16" id="R5B" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="writing '111'   will block debug reset request from CR5A  toggling globally reset for CR5A" end="0" id="R5A" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5SS_POR_RST_CTRL" description="" id="APPSS_CR5SS_POR_RST_CTRL" offset="0xF8" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. write pulse bit field: writing '111' will assert por reset to R5SS" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5SSA_RST_CTRL" description="" id="APPSS_CR5SSA_RST_CTRL" offset="0xFC" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. write pulse bit field: writing '111'  will reset CR5A and APPSS_CR5A_VIM" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5SSB_RST_CTRL" description="" id="APPSS_CR5SSB_RST_CTRL" offset="0x100" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. write pulse bit field: writing '111'  will reset CR5B  and APPSS_CR5B_VIM" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5A_RST_CTRL" description="" id="APPSS_CR5A_RST_CTRL" offset="0x104" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. write pulse bit field: writing '111'  will reset CR5A only" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5B_RST_CTRL" description="" id="APPSS_CR5B_RST_CTRL" offset="0x108" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. write pulse bit field: writing '111'  will reset CR5B only" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_VIMA_RST_CTRL" description="" id="APPSS_VIMA_RST_CTRL" offset="0x10C" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing  '111'  will reset APPSS_CR5A_VIM" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_VIMB_RST_CTRL" description="" id="APPSS_VIMB_RST_CTRL" offset="0x110" width="32">
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing  '111'  will reset APPSS_CR5B_VIM" end="0" id="ASSERT" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="R5_COREA_GATE" description="" id="R5_COREA_GATE" offset="0x114" width="32">
+    
+  <bitfield begin="2" description="writing '111'  will gate clock to CR5A related peripherals inside Cortexr5ss" end="0" id="CLKGATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="R5_COREB_GATE" description="" id="R5_COREB_GATE" offset="0x118" width="32">
+    
+  <bitfield begin="2" description="writing '111'  will gate clock to CR5B related peripherals inside Cortexr5ss" end="0" id="CLKGATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_CR5F_CLK_SRC_SEL_CTRL" description="" id="APPSS_CR5F_CLK_SRC_SEL_CTRL" offset="0x11C" width="32">
+    
+  <bitfield begin="2" description="writing 3'b111 ensures R5 to be same as BUS_CLK writing 3'b000 ensures R5 clock will be same as CR5_CLK from top_rcm" end="0" id="CLKSRCSEL" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="R5SS_SYS_CLK_DIVR_SYNC" description="" id="R5SS_SYS_CLK_DIVR_SYNC" offset="0x120" width="32">
+    
+  <bitfield begin="3" description="Divider value for System Clock selected clock. Data should be loaded as multibit. For example: if divider value of 0x5 should be selected then 0x555 should be configured to the register." end="0" id="CLK_DIVR" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_DMTA_CLKCTL" description="" id="HSM_DMTA_CLKCTL" offset="0x800" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : XREF_IN 0x2 : OSC_CLK 0x3 : SLOW_CLK 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_DMTA_CLKSTAT" description="" id="HSM_DMTA_CLKSTAT" offset="0x804" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN 0x4 : OSC_CLK 0x8 : SLOW_CLK 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_DMTB_CLKCTL" description="" id="HSM_DMTB_CLKCTL" offset="0x808" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : XREF_IN 0x2 : OSC_CLK 0x3 : SLOW_CLK 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_DMTB_CLKSTAT" description="" id="HSM_DMTB_CLKSTAT" offset="0x80C" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN 0x4 : OSC_CLK 0x8 : SLOW_CLK 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_WDT_CLKCTL" description="" id="HSM_WDT_CLKCTL" offset="0x810" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="0x0 : OSC_CLK 0x1 : XREF_IN 0x2 : OSC_CLK 0x3 : SLOW_CLK 0x4 : SLOW_CLK 0x5 : SLOW_CLK 0x6 : SLOW_CLK 0x7 : SLOW_CLK For other values if the lower 3 bits matches with above, corresponding clock is selected. Data should be loaded as multibit. For example: if Clock source 0x5 should be selected then 0x555 should be configured to the register." end="4" id="SRCSEL" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="3" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_WDT_CLKSTAT" description="" id="HSM_WDT_CLKSTAT" offset="0x814" width="32">
+    
+  <bitfield begin="11" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN 0x4 : OSC_CLK 0x8 : SLOW_CLK 0x10 : SLOW_CLK 0x20 : SLOW_CLK 0x40 : SLOW_CLK 0x80 : SLOW_CLK" end="4" id="CURRCLK" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_RTC_CLKCTL" description="" id="HSM_RTC_CLKCTL" offset="0x818" width="32">
+    
+  <bitfield begin="27" description="Divide value 0x0 : div1 0x1 : div2 0x2 : div3 . . 0xF = div16 Data should be loaded as multibit. For example: if divider value of '0x8' should be selected then '0x888' should be configured to the register." end="16" id="DIVR" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="0x0 : OSC_CLK 0x1 : XREF_IN" end="4" id="SRCSEL" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="0x0 : Enable the Clock 0x7 : Gate the clock" end="0" id="GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="HSM_RTC_CLKSTAT" description="" id="HSM_RTC_CLKSTAT" offset="0x81C" width="32">
+    
+  <bitfield begin="5" description="Current Clock selected by GCM Clock Mux 0x1 : OSC_CLK 0x2 : XREF_IN" end="4" id="CURRCLK" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Gives the current divr setting used by the clock divider." end="0" id="CURRDIVR" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="APP_WD_CLKGATE_OVERRIDE" description="" id="APP_WD_CLKGATE_OVERRIDE" offset="0x820" width="32">
+    
+  <bitfield begin="0" description="If set to 0, then hardware override on wdt clock gating disable else software override" end="0" id="OVERRIDE" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK0" description="  - KICK0 component " id="LOCK0_KICK0" offset="0x1008" width="32">
+    
+  <bitfield begin="31" description=" - KICK0 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK1" description="  - KICK1 component " id="LOCK0_KICK1" offset="0x100C" width="32">
+    
+  <bitfield begin="31" description=" - KICK1 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_raw_status" description=" Interrupt Raw Status/Set Register " id="intr_raw_status" offset="0x1010" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enabled_status_clear" description=" Interrupt Enabled Status/Clear register " id="intr_enabled_status_clear" offset="0x1014" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable" description=" Interrupt Enable register " id="intr_enable" offset="0x1018" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable_clear" description=" Interrupt Enable Clear register " id="intr_enable_clear" offset="0x101C" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="eoi" description=" EOI register " id="eoi" offset="0x1020" width="32">
+    
+  <bitfield begin="7" description="EOI vector value. Write this with interrupt distribution value in the chip." end="0" id="" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_address" description=" Fault Address register " id="fault_address" offset="0x1024" width="32">
+    
+  <bitfield begin="31" description="Fault Address." end="0" id="" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_type_status" description=" Fault Type Status register " id="fault_type_status" offset="0x1028" width="32">
+    
+  <bitfield begin="6" description="Non-secure access." end="6" id="" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Fault Type   10_0000 = Supervisor read  fault  - priv = 1 dir = 1 dtype != 1    01_0000 = Supervisor write fault  - priv = 1 dir = 0   00_1000 = Supervisor execute fault - priv = 1 dir = 1 dtype = 1   00_0100 = User read  fault - priv = 0 dir = 1 dtype = 1   00_0010 = User write fault - priv = 0 dir = 0   00_0001 = User execute fault - priv = 0 dir = 1 dtype = 1   00_0000 = No fault" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_attr_status" description=" Fault Attribute Status register " id="fault_attr_status" offset="0x102C" width="32">
+    
+  <bitfield begin="31" description="XID." end="20" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="19" description="Route ID." end="8" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="7" description="Privilege ID." end="0" id="" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_clear" description=" Fault Clear register " id="fault_clear" offset="0x1030" width="32">
+    
+  <bitfield begin="0" description="Fault clear. Writing a 1 clears the current fault. Writing a 0 has no effect." end="0" id="" rwaccess="W" width="1"></bitfield>
+  </register>
+</module>

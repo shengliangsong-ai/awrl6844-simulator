@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+
+<module description="" id="DSS_LSTC">
+  
+  
+  <register acronym="PID" description=" PID register " id="PID" offset="0x0" width="32">
+    
+  <bitfield begin="31" description="" end="16" id="" rwaccess="R" width="16"></bitfield>
+    
+  <bitfield begin="15" description="" end="11" id="" rwaccess="R" width="5"></bitfield>
+    
+  <bitfield begin="10" description="" end="8" id="" rwaccess="R" width="3"></bitfield>
+    
+  <bitfield begin="7" description="" end="6" id="" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="5" description="" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED0" description="" id="RESERVED0" offset="0x4" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="24" id="wphres" rwaccess="RW" width="8"></bitfield>
+    
+  <bitfield begin="15" description="Reserved" end="8" id="rores" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="7" description="Reserved" end="0" id="rwres" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ENABLE" description="" id="LSTC_ENABLE" offset="0x8" width="32">
+    
+  <bitfield begin="5" description="" end="5" id="LSTC_ZERO_FLUSH_BYPASS" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="4" description="" end="4" id="LSTC_UUT_IDLE_OVR" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="3" description="" end="0" id="LSTC_KEY_ENA" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_STATUS" description="" id="LSTC_STATUS" offset="0xC" width="32">
+    
+  <bitfield begin="12" description="" end="8" id="LSTC_CURRENT_STATUS" rwaccess="R" width="5"></bitfield>
+    
+  <bitfield begin="7" description="" end="7" id="LSTC_CORE_ERROR" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="6" description="" end="6" id="LSTC_TO_ERROR" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="5" description="" end="5" id="LSTC_FAIL" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="4" description="" end="4" id="LSTC_DONE" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="3" description="" end="0" id="LSTC_ACTIVE" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_CFG_CNTRS" description="" id="LSTC_CFG_CNTRS" offset="0x10" width="32">
+    
+  <bitfield begin="27" description="" end="24" id="LSTC_SM_CFG_CNTR7" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="23" description="" end="20" id="LSTC_SM_CFG_CNTR6" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="19" description="" end="16" id="LSTC_SM_CFG_CNTR5" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="15" description="" end="12" id="LSTC_SM_CFG_CNTR4" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="11" description="" end="8" id="LSTC_SM_CFG_CNTR3" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="7" description="" end="4" id="LSTC_SM_CFG_CNTR2" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="3" description="" end="0" id="LSTC_SM_CFG_CNTR1" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_LBIST_MACRO_CNTRS" description="" id="LSTC_LBIST_MACRO_CNTRS" offset="0x14" width="32">
+    
+  <bitfield begin="31" description="" end="18" id="STATIC_PC_DEF" rwaccess="RW" width="14"></bitfield>
+    
+  <bitfield begin="17" description="" end="12" id="LSTC_SCAN_PC_DEF" rwaccess="RW" width="6"></bitfield>
+    
+  <bitfield begin="11" description="" end="6" id="LSTC_RESET_PC_DEF" rwaccess="RW" width="6"></bitfield>
+    
+  <bitfield begin="5" description="" end="0" id="LSTC_SET_PC_DEF" rwaccess="RW" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_TO_PRELOAD" description="" id="LSTC_TO_PRELOAD" offset="0x18" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_TO_PRELOAD" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_MACRO_SC" description="" id="LSTC_MACRO_SC" offset="0x1C" width="32">
+    
+  <bitfield begin="11" description="" end="8" id="LSTC_MACRO_CAP_DELAY" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="7" description="" end="4" id="LSTC_MACRO_SE_DELAY" rwaccess="RW" width="4"></bitfield>
+    
+  <bitfield begin="3" description="" end="0" id="LSTC_MACRO_SW_DELAY" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_0" description="" id="LSTC_GOLDEN_MISR_0" offset="0x20" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_0" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_1" description="" id="LSTC_GOLDEN_MISR_1" offset="0x24" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_1" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_2" description="" id="LSTC_GOLDEN_MISR_2" offset="0x28" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_2" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_3" description="" id="LSTC_GOLDEN_MISR_3" offset="0x2C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_3" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_4" description="" id="LSTC_GOLDEN_MISR_4" offset="0x30" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_4" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_5" description="" id="LSTC_GOLDEN_MISR_5" offset="0x34" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_5" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_6" description="" id="LSTC_GOLDEN_MISR_6" offset="0x38" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_6" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_7" description="" id="LSTC_GOLDEN_MISR_7" offset="0x3C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_7" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_0" description="" id="LSTC_ACTUAL_MISR_0" offset="0x40" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_8" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_1" description="" id="LSTC_ACTUAL_MISR_1" offset="0x44" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_9" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_2" description="" id="LSTC_ACTUAL_MISR_2" offset="0x48" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_10" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_3" description="" id="LSTC_ACTUAL_MISR_3" offset="0x4C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_11" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_4" description="" id="LSTC_ACTUAL_MISR_4" offset="0x50" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_12" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_5" description="" id="LSTC_ACTUAL_MISR_5" offset="0x54" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_13" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_6" description="" id="LSTC_ACTUAL_MISR_6" offset="0x58" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_14" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_7" description="" id="LSTC_ACTUAL_MISR_7" offset="0x5C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_15" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_0" description="" id="LSTC_GOLDEN_MISR_0" offset="0x60" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_16" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_17" description="" id="LSTC_GOLDEN_MISR_17" offset="0x64" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_17" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_18" description="" id="LSTC_GOLDEN_MISR_18" offset="0x68" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_18" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_19" description="" id="LSTC_GOLDEN_MISR_19" offset="0x6C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_19" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_20" description="" id="LSTC_GOLDEN_MISR_20" offset="0x70" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_20" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_21" description="" id="LSTC_GOLDEN_MISR_21" offset="0x74" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_21" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_22" description="" id="LSTC_GOLDEN_MISR_22" offset="0x78" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_22" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_23" description="" id="LSTC_GOLDEN_MISR_23" offset="0x7C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_23" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_24" description="" id="LSTC_GOLDEN_MISR_24" offset="0x80" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_24" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_25" description="" id="LSTC_GOLDEN_MISR_25" offset="0x84" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_25" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_26" description="" id="LSTC_GOLDEN_MISR_26" offset="0x88" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_26" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_GOLDEN_MISR_27" description="" id="LSTC_GOLDEN_MISR_27" offset="0x8C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_GOLDEN_MISR_27" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_0" description="" id="LSTC_ACTUAL_MISR_0" offset="0x90" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_0" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_1" description="" id="LSTC_ACTUAL_MISR_1" offset="0x94" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_1" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_2" description="" id="LSTC_ACTUAL_MISR_2" offset="0x98" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_2" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_3" description="" id="LSTC_ACTUAL_MISR_3" offset="0x9C" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_3" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_4" description="" id="LSTC_ACTUAL_MISR_4" offset="0xA0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_4" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_5" description="" id="LSTC_ACTUAL_MISR_5" offset="0xA4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_5" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_6" description="" id="LSTC_ACTUAL_MISR_6" offset="0xA8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_6" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_7" description="" id="LSTC_ACTUAL_MISR_7" offset="0xAC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_7" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_8" description="" id="LSTC_ACTUAL_MISR_8" offset="0xB0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_8" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_9" description="" id="LSTC_ACTUAL_MISR_9" offset="0xB4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_9" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_10" description="" id="LSTC_ACTUAL_MISR_10" offset="0xB8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_10" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_11" description="" id="LSTC_ACTUAL_MISR_11" offset="0xBC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_11" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_12" description="" id="LSTC_ACTUAL_MISR_12" offset="0xC0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_12" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_13" description="" id="LSTC_ACTUAL_MISR_13" offset="0xC4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_13" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_14" description="" id="LSTC_ACTUAL_MISR_14" offset="0xC8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_14" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_15" description="" id="LSTC_ACTUAL_MISR_15" offset="0xCC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_15" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_16" description="" id="LSTC_ACTUAL_MISR_16" offset="0xD0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_16" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_17" description="" id="LSTC_ACTUAL_MISR_17" offset="0xD4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_17" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_18" description="" id="LSTC_ACTUAL_MISR_18" offset="0xD8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_18" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_19" description="" id="LSTC_ACTUAL_MISR_19" offset="0xDC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_19" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_20" description="" id="LSTC_ACTUAL_MISR_20" offset="0xE0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_20" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_21" description="" id="LSTC_ACTUAL_MISR_21" offset="0xE4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_21" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_22" description="" id="LSTC_ACTUAL_MISR_22" offset="0xE8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_22" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_23" description="" id="LSTC_ACTUAL_MISR_23" offset="0xEC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_23" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_24" description="" id="LSTC_ACTUAL_MISR_24" offset="0xF0" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_24" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_25" description="" id="LSTC_ACTUAL_MISR_25" offset="0xF4" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_25" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_26" description="" id="LSTC_ACTUAL_MISR_26" offset="0xF8" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_26" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LSTC_ACTUAL_MISR_27" description="" id="LSTC_ACTUAL_MISR_27" offset="0xFC" width="32">
+    
+  <bitfield begin="31" description="" end="0" id="LSTC_ACTUAL_MISR_27" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK0" description="  - KICK0 component " id="LOCK0_KICK0" offset="0x1008" width="32">
+    
+  <bitfield begin="31" description=" - KICK0 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK1" description="  - KICK1 component " id="LOCK0_KICK1" offset="0x100C" width="32">
+    
+  <bitfield begin="31" description=" - KICK1 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_raw_status" description=" Interrupt Raw Status/Set Register " id="intr_raw_status" offset="0x1010" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enabled_status_clear" description=" Interrupt Enabled Status/Clear register " id="intr_enabled_status_clear" offset="0x1014" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable" description=" Interrupt Enable register " id="intr_enable" offset="0x1018" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable_clear" description=" Interrupt Enable Clear register " id="intr_enable_clear" offset="0x101C" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="eoi" description=" EOI register " id="eoi" offset="0x1020" width="32">
+    
+  <bitfield begin="7" description="EOI vector value. Write this with interrupt distribution value in the chip." end="0" id="" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_address" description=" Fault Address register " id="fault_address" offset="0x1024" width="32">
+    
+  <bitfield begin="31" description="Fault Address." end="0" id="" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_type_status" description=" Fault Type Status register " id="fault_type_status" offset="0x1028" width="32">
+    
+  <bitfield begin="6" description="Non-secure access." end="6" id="" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Fault Type #br# 10_0000 = Supervisor read  fault  - priv = 1 dir = 1 dtype != 1 #br#  01_0000 = Supervisor write fault  - priv = 1 dir = 0 #br# 00_1000 = Supervisor execute fault - priv = 1 dir = 1 dtype = 1 #br# 00_0100 = User read  fault - priv = 0 dir = 1 dtype = 1 #br# 00_0010 = User write fault - priv = 0 dir = 0 #br# 00_0001 = User execute fault - priv = 0 dir = 1 dtype = 1 #br# 00_0000 = No fault" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_attr_status" description=" Fault Attribute Status register " id="fault_attr_status" offset="0x102C" width="32">
+    
+  <bitfield begin="31" description="XID." end="20" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="19" description="Route ID." end="8" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="7" description="Privilege ID." end="0" id="" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_clear" description=" Fault Clear register " id="fault_clear" offset="0x1030" width="32">
+    
+  <bitfield begin="0" description="Fault clear. Writing a 1 clears the current fault. Writing a 0 has no effect." end="0" id="" rwaccess="W" width="1"></bitfield>
+  </register>
+</module>

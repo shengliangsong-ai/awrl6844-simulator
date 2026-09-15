@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+
+<module description="" id="FEC_RCM">
+  
+  
+  <register acronym="PID" description=" PID register " id="PID" offset="0x0" width="32">
+    
+  <bitfield begin="31" description="" end="16" id="" rwaccess="R" width="16"></bitfield>
+    
+  <bitfield begin="15" description="" end="11" id="" rwaccess="R" width="5"></bitfield>
+    
+  <bitfield begin="10" description="" end="8" id="" rwaccess="R" width="3"></bitfield>
+    
+  <bitfield begin="7" description="" end="6" id="" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="5" description="" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_SYS_CLKCTL" description=" FEC_SYS_CLKCTL " id="FEC_SYS_CLKCTL" offset="0x4" width="32">
+    
+  <bitfield begin="27" description="Divider value for FEC_SYS selected clock. Data should be loaded as multibit.#br#For example: if divider value of 8 (1000) needs to be selected then '100010001000' should be configured to the register." end="16" id="divr" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="15" description="Select line for selecting source clock for FEC_SYS. Data should be loaded as multibit.#br#For example: if '0x5' should be selected then '0x555' should be configured to the register.#br##br#0x0 : OSC_CLK#br#0x1 : SLOW_CLK#br#0x2 : MDLL_CLK#br#0x3 : FAST_CLK#br#0x4 : SLOW_CLK#br#0x5 : SLOW_CLK#br#0x6 : SLOW_CLK#br#0x7 : SLOW_CLK" end="4" id="srcsel" rwaccess="RW" width="12"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_SYS_CLKSTAT" description=" FEC_SYS_CLKSTAT " id="FEC_SYS_CLKSTAT" offset="0x8" width="32">
+    
+  <bitfield begin="11" description="Status shows the source clock selected for FEC_SYS_CLK." end="4" id="currclk" rwaccess="R" width="8"></bitfield>
+    
+  <bitfield begin="3" description="Status shows the current divider value choosen for FEC_SYS_CLK." end="0" id="currdivr" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="PREVIOUS_NAME" description=" FEC_RTI_CLKCTL " id="PREVIOUS_NAME" offset="0xC" width="32">
+    
+  <bitfield begin="27" description="Reserved" end="16" id="divr" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="Reserved" end="4" id="srcsel" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Reserved" end="0" id="gate" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_RTI_CLKSTAT" description=" FEC_RTI_CLKSTAT " id="FEC_RTI_CLKSTAT" offset="0x10" width="32">
+    
+  <bitfield begin="5" description="Reserved" end="4" id="currclk" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Reserved" end="0" id="currdivr" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_GPADC_CLKCTL" description=" FESS_GPADC_CLK_SRC_SEL " id="FEC_GPADC_CLKCTL" offset="0x14" width="32">
+    
+  <bitfield begin="27" description="Divider value for GPADC selected clock. Data should be loaded as multibit.#br#For example: if divider value of 8 (1000) needs to be selected then '100010001000' should be configured to the register." end="16" id="divr" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="6" description="Select line for selecting source clock for GPADC.Data should be loaded as multibit.#br#For example: if '0x5' should be selected then '0x555' should be configured to the register.#br##br#0x0: XTALCLK#br#0x1: XREF_IN" end="4" id="srcsel" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Writing '111' will gate clock for GPADC." end="0" id="gate" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_GPADC_CLKSTAT" description=" FESS_GPADC_CLK_DIV_VAL " id="FEC_GPADC_CLKSTAT" offset="0x18" width="32">
+    
+  <bitfield begin="5" description="Status shows the source clock selected for GPADC_CLK." end="4" id="currclk" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="3" description="Status shows the current divider value choosen for GPADC_CLK." end="0" id="currdivr" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_RX_ADC_CLKCTL" description=" FEC_RX_ADC_CLKCTL " id="FEC_RX_ADC_CLKCTL" offset="0x24" width="32">
+    
+  <bitfield begin="27" description="Divider value for RX_ADC_I selected clock. Data should be loaded as multibit.#br#For example: if divider value of 8 (1000) needs to be selected then '100010001000' should be configured to the register." end="16" id="divr" rwaccess="RW" width="12"></bitfield>
+    
+  <bitfield begin="12" description="Select line for selecting source clock for RX_ADC_CLK.Data should be loaded as multibit.#br#To select RX1_ADC_CLK write 9'b000000000 or hex 'h000#br#To select RX2_ADC_CLK write 9'b001001001 or hex 'h049#br#To select RX3_ADC_CLK write 9'b010010010 or hex 'h092#br#To select RX4_ADC_CLK write 9'b011011011 or hex 'h0DB#br#To select RX_ADC_ROOT_CLK write 9'b100100100 or hex 'h124" end="4" id="srcsel" rwaccess="RW" width="9"></bitfield>
+    
+  <bitfield begin="2" description="Writing '111' will gate clock for RX_ADC_I." end="0" id="gate" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_RX_ADC_CLKSTAT" description=" FEC_RX_ADC_CLKSTAT " id="FEC_RX_ADC_CLKSTAT" offset="0x28" width="32">
+    
+  <bitfield begin="3" description="Status shows the current divider value choosen for RX_ADC_I_CLK." end="0" id="currdivr" rwaccess="R" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_MDIF_SER2X_CLKCTL" description=" FEC_MDIF_SER2X_CLKCTL " id="FEC_MDIF_SER2X_CLKCTL" offset="0x2C" width="32">
+    
+  <bitfield begin="15" description="Select line for selecting source clock for MDIF_SER2X. Data should be loaded as multibit.#br#For example: if '0x5' should be selected then '0x555' should be configured to the register.#br##br#0x0 : OSC_CLK#br#0x1 : PLL_DIG_CLK#br#0x2 : APLL_CLK_BY2#br#0x3 : MDLL_CLK_TO_MDIF#br#0x4 : RX_ADC_CLK#br#0x5 : SLOW_CLK#br#0x6 : SLOW_CLK" end="4" id="srcsel" rwaccess="RW" width="12"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_MDIF_SER2X_CLKSTAT" description=" FEC_MDIF_SER2X_CLKSTAT " id="FEC_MDIF_SER2X_CLKSTAT" offset="0x30" width="32">
+    
+  <bitfield begin="11" description="Status shows the source clock selected for CLK_MDIF_SER2X." end="4" id="currclk" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="IPCFGCLKGATE0" description=" IPCFGCLKGATE0 " id="IPCFGCLKGATE0" offset="0x34" width="32">
+    
+  <bitfield begin="29" description="Writing '111' will gate clock for GPADCCFG." end="27" id="gpadc_ctrl" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="26" description="Writing '111' will gate clock for RAMPGEN." end="24" id="rampgen" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="23" description="Writing '111' will gate clock for DFECFG." end="21" id="dfe_cfg" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="Writing '111' will gate clock for ANACFG." end="18" id="ana_cfg" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="Writing '111' will gate clock for FECTRL." end="6" id="fec_ctrl" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="Writing '111' will gate clock for RTI." end="3" id="fec_rti" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="IPCFGCLKGATE1" description=" IPCFGCLKGATE1 " id="IPCFGCLKGATE1" offset="0x38" width="32">
+    
+  <bitfield begin="14" description="Writing '111' will gate clock for SOCC." end="12" id="fec_socc" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="Writing '111' will gate clock for DFE CLOCK OUT." end="9" id="fec_dfe_out_clk" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="Writing '111' will gate clock for DFE." end="6" id="fec_dfe" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="Writing '111' will gate clock for MDIF." end="3" id="fec_mdif" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Writing '111' will gate clock for FECFFT2X." end="0" id="fec_fft_cfg" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="BLOCKRESET0" description=" BLOCKRESET0 " id="BLOCKRESET0" offset="0x3C" width="32">
+    
+  <bitfield begin="23" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset MDIF." end="21" id="fec_mdif" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="20" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset FECFFT." end="18" id="fec_fft_cfg" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="17" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset GPADC." end="15" id="gpadc_ctrl" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="14" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset SOCC." end="12" id="fec_socc" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="11" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset FEC_VBUSP." end="9" id="fec_vbusp" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="8" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset CHIRP TIMER" end="6" id="fec_chirp_timer" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="5" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset Perchirp memory interpreter." end="3" id="fec_perchirp_mem_intrp" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="This feature is for debug purpose only. Software needs to ensure the state of the Device/IP before configuring. Writing '111' will reset DFE." end="0" id="dfe_cfg" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_WFICHECK" description=" RST_WFICHECK " id="RST_WFICHECK" offset="0x40" width="32">
+    
+  <bitfield begin="2" description="Writing '000' will disable check for WFI before local reset assertion of CM3" end="0" id="cm3" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_ASSERTDLY" description=" RST_ASSERTDLY " id="RST_ASSERTDLY" offset="0x44" width="32">
+    
+  <bitfield begin="7" description="Value decides number of cycles reset should be asserted for CM3" end="0" id="common" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST2ASSERTDLY" description=" RST2ASSERTDLY " id="RST2ASSERTDLY" offset="0x48" width="32">
+    
+  <bitfield begin="15" description="Value decides number of cycles to be held before asserting reset for CM3" end="8" id="cm3" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_CM3_POR_RST_CTRL" description=" FEC_CM3_POR_RST_CTRL " id="FEC_CM3_POR_RST_CTRL" offset="0x4C" width="32">
+    
+  <bitfield begin="2" description="Write pulse bit field:#br#CM3 has two resets - PORESETn and SYSRESETn#br#This register Initiates a POReset like action to CM3. #br#For SYSRESETn, refer to bit field 'app_pd_core_reset_reqn ' in PRCM registers.#br#Writing '111' will reset CM3 only" end="0" id="cm3_por_rst_assert" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_CM3_CFG" description=" FEC_CM3_CFG " id="FEC_CM3_CFG" offset="0x50" width="32">
+    
+  <bitfield begin="5" description="3'b000 - CM3 HCLK is ungated#br#3'b111 - CM3 HCLK is gated" end="3" id="hclk_gate" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="WIC mode Request from PMU" end="2" id="wicenreq" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Hold core in sleep mode. #br#'0' : When in sleep mode, enable continue to hold the core in sleep.#br#'1' : This feature is disabled." end="1" id="sleep_hold_reqn" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Force HCLK to run, overrides GATEHCLK" end="0" id="force_hclk_active" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_CM3_STATUS" description=" FEC_CM3_STATUS " id="FEC_CM3_STATUS" offset="0x54" width="32">
+    
+  <bitfield begin="2" description="Indicate when SYS reset to core is asserted" end="2" id="sys_rstn" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Indicate core is force in sleep mode" end="1" id="sleep_hold_ackn" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="0" description="WIC mode acknowledge from WIC" end="0" id="wicenackn" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_FSM_TRIG" description=" RST_FSM_TRIG " id="RST_FSM_TRIG" offset="0x58" width="32">
+    
+  <bitfield begin="2" description="Write pulse bit field:#br#FSM Reset Trigger #br#Initiates function like STC_RESET. #br#Refer to https://confluence.itg.ti.com/display/LPR/LPR+Reset" end="0" id="cm3" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_CAUSE" description=" RST_CAUSE " id="RST_CAUSE" offset="0x5C" width="32">
+    
+  <bitfield begin="7" description="Reset cause register for FEC CPU#br#0x00 - All cleared#br#0x01 - Power On Reset (PoR)#br#0x02 - Subsystem Reset (Combination of Warm Reset initiated from PRCM using LPRADAR:TOP_PRCM:RST_FEC_PD_SOFT_RESET and PoR reset)#br#0x04 - STC RESET#br#0x08 - Software controlled Power On Reset (PoR) Pulse#br#0x10 - CPU Only Reset triggered by writing to LPRADAR:FEC_RCM:RST_FSM_TRIG&lt;RST_FSM_TRIG_CM3> (self triggered CPU reset during MEMSWAP/ECLIPSE mode to wait for WFI to assert the reset to CPU).#br#0x20 - Core Reset initiated from PRCM using LPRADAR:TOP_PRCM:RST_SOFT_FEC_CORE_SYSRESET_REQ (reset CPU unconditionally - by debugger) or LPRADAR:TOP_PRCM:FEC_CORE_SYSRESET_PARAM_WAKEUP_OUT_STATE#br#0x40 - Reserved" end="0" id="common" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="RST_CAUSE_CLR" description=" RST_CAUSE_CLR " id="RST_CAUSE_CLR" offset="0x60" width="32">
+    
+  <bitfield begin="2" description="Writing '111' will clear the RST_CAUSE register" end="0" id="cpu" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="SYNTH_CLK_DIV2_CTRL" description=" SYNTH_CLK_DIV2_CTRL " id="SYNTH_CLK_DIV2_CTRL" offset="0x64" width="32">
+    
+  <bitfield begin="0" description="0 : Divide by 2 clock of 1.25 Ghz synth clock to DCC is disabled . #br#1 : Divide by 2 clock of 1.25 Ghz synth clock to DCC is enabled ." end="0" id="enable" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="TEST_PATTERN_CLK_GATE" description=" TEST_PATTERN_CLK_GATE " id="TEST_PATTERN_CLK_GATE" offset="0x68" width="32">
+    
+  <bitfield begin="2" description="Writing 3'b111 will gate the clock to test pattern generator.Writing 3'b000 will ungate the clock." end="0" id="TEST_PATTERN_CLK_GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="DFT_FECSS_LSTC_CLK_GATE" description=" DFT_FECSS_LSTC_CLK_GATE " id="DFT_FECSS_LSTC_CLK_GATE" offset="0x6C" width="32">
+    
+  <bitfield begin="2" description="Writing 3'b111 will gate the clock to LSTC.Writing 3'b000 will ungate the clock." end="0" id="DFT_FECSS_LSTC_CLK_GATE" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="DFT_FECSS_LSTC_CLK_VBUSP_GATE" description=" DFT_FECSS_LSTC_CLK_VBUSP_GATE " id="DFT_FECSS_LSTC_CLK_VBUSP_GATE" offset="0x70" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to LSTC#br#3'b111: Gate Clock to FEC LSTC" end="0" id="enable" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_RAM_CLOCK_GATE" description=" FEC_RAM_CLOCK_GATE " id="FEC_RAM_CLOCK_GATE" offset="0x74" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to FEC RAM#br#3'b111 : Gate Clock to FEC RAM" end="0" id="enable" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_ROM_CLOCK_GATE" description=" FEC_ROM_CLOCK_GATE " id="FEC_ROM_CLOCK_GATE" offset="0x78" width="32">
+    
+  <bitfield begin="2" description="3'b000 : Ungate clock to FEC ROM#br#3'b111 : Gate Clock to FEC ROM" end="0" id="enable" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_CLOCK_GATE_REG1" description=" FEC_CLOCK_GATE_REG1 " id="FEC_CLOCK_GATE_REG1" offset="0x7C" width="32">
+    
+  <bitfield begin="31" description="[3:0]  ->  Writing 3'b111 will gate the ADC Clock  to Top Frame Timer#br#               Writing 3'b000 will ungate the ADC clock to Top Frame Rimer#br#[31:4] -> Reserved" end="0" id="enable" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_CLOCK_GATE_REG2" description=" FEC_CLOCK_GATE_REG2 " id="FEC_CLOCK_GATE_REG2" offset="0x80" width="32">
+    
+  <bitfield begin="31" description="Reserved" end="0" id="enable" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FEC_LSTC_EN" description=" FEC_LSTC_EN " id="FEC_LSTC_EN" offset="0x84" width="32">
+    
+  <bitfield begin="0" description="Enable vbusp_req and clk_en for fec lstc" end="0" id="enable" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK0" description="  - KICK0 component " id="LOCK0_KICK0" offset="0x1008" width="32">
+    
+  <bitfield begin="31" description=" - KICK0 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK1" description="  - KICK1 component " id="LOCK0_KICK1" offset="0x100C" width="32">
+    
+  <bitfield begin="31" description=" - KICK1 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_raw_status" description=" Interrupt Raw Status/Set Register " id="intr_raw_status" offset="0x1010" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enabled_status_clear" description=" Interrupt Enabled Status/Clear register " id="intr_enabled_status_clear" offset="0x1014" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable" description=" Interrupt Enable register " id="intr_enable" offset="0x1018" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable_clear" description=" Interrupt Enable Clear register " id="intr_enable_clear" offset="0x101C" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="eoi" description=" EOI register " id="eoi" offset="0x1020" width="32">
+    
+  <bitfield begin="7" description="EOI vector value. Write this with interrupt distribution value in the chip." end="0" id="" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_address" description=" Fault Address register " id="fault_address" offset="0x1024" width="32">
+    
+  <bitfield begin="31" description="Fault Address." end="0" id="" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_type_status" description=" Fault Type Status register " id="fault_type_status" offset="0x1028" width="32">
+    
+  <bitfield begin="6" description="Non-secure access." end="6" id="" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Fault Type #br# 10_0000 = Supervisor read  fault  - priv = 1 dir = 1 dtype != 1 #br#  01_0000 = Supervisor write fault  - priv = 1 dir = 0 #br# 00_1000 = Supervisor execute fault - priv = 1 dir = 1 dtype = 1 #br# 00_0100 = User read  fault - priv = 0 dir = 1 dtype = 1 #br# 00_0010 = User write fault - priv = 0 dir = 0 #br# 00_0001 = User execute fault - priv = 0 dir = 1 dtype = 1 #br# 00_0000 = No fault" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_attr_status" description=" Fault Attribute Status register " id="fault_attr_status" offset="0x102C" width="32">
+    
+  <bitfield begin="31" description="XID." end="20" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="19" description="Route ID." end="8" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="7" description="Privilege ID." end="0" id="" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_clear" description=" Fault Clear register " id="fault_clear" offset="0x1030" width="32">
+    
+  <bitfield begin="0" description="Fault clear. Writing a 1 clears the current fault. Writing a 0 has no effect." end="0" id="" rwaccess="W" width="1"></bitfield>
+  </register>
+</module>

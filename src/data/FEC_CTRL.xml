@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+
+<module description="" id="FEC_CTRL">
+  
+  
+  <register acronym="PID" description=" PID register " id="PID" offset="0x0" width="32">
+    
+  <bitfield begin="31" description="" end="16" id="" rwaccess="R" width="16"></bitfield>
+    
+  <bitfield begin="15" description="" end="11" id="" rwaccess="R" width="5"></bitfield>
+    
+  <bitfield begin="10" description="" end="8" id="" rwaccess="R" width="3"></bitfield>
+    
+  <bitfield begin="7" description="" end="6" id="" rwaccess="R" width="2"></bitfield>
+    
+  <bitfield begin="5" description="" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL0" description=" FESS_CTRL0 " id="FESS_CTRL0" offset="0x4" width="32">
+    
+  <bitfield begin="31" description="HW reserved Register" end="0" id="fess_ctrl0" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL1" description=" FESS_CTRL1 " id="FESS_CTRL1" offset="0x8" width="32">
+    
+  <bitfield begin="31" description="HW reserved Register" end="0" id="fess_ctrl1" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="PREVIOUS_NAME" description=" FESS_CTRL2 " id="PREVIOUS_NAME" offset="0xC" width="32">
+    
+  <bitfield begin="31" description="HW reserved Register" end="0" id="fess_ctrl2" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL3" description=" FESS_CTRL3 " id="FESS_CTRL3" offset="0x10" width="32">
+    
+  <bitfield begin="31" description="HW reserved Register" end="0" id="fess_ctrl3" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DBG_ACK_CTRL" description=" FECSS_DBG_ACK_CTRL " id="FECSS_DBG_ACK_CTRL" offset="0x14" width="32">
+    
+  <bitfield begin="2" description="TI RESERVED" end="0" id="reserved" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_CM3_ROM_ECLIPSE" description=" FECSS_CM3_ROM_ECLIPSE " id="FECSS_CM3_ROM_ECLIPSE" offset="0x18" width="32">
+    
+  <bitfield begin="5" description="Writing 3'b111 ensures ROM-Eclipsing happens only after FECSS reset. Orelse it will be a immediate change." end="3" id="memswap_wait" rwaccess="RW" width="3"></bitfield>
+    
+  <bitfield begin="2" description="Writing '111' ensures eclipsing of ROM immediately if memswap_wait is not set. If memswap_wait is set then ROM is eclipsed after FECSS reset assertion." end="0" id="memswap" rwaccess="RW" width="3"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_CM3_STATUS_REG" description=" FECSS_CM3_STATUS_REG " id="FECSS_CM3_STATUS_REG" offset="0x1C" width="32">
+    
+  <bitfield begin="0" description="reading 1: confirms ROM is Eclipsed from with RAM for the CPU." end="0" id="memswap" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHARED_MEM_INIT" description=" FECSS_SHARED_MEM_INIT " id="FECSS_SHARED_MEM_INIT" offset="0x20" width="32">
+    
+  <bitfield begin="0" description="RESERVED" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHARED_MEM_DONE" description=" FECSS_SHARED_MEM_DONE " id="FECSS_SHARED_MEM_DONE" offset="0x24" width="32">
+    
+  <bitfield begin="0" description="RESERVED" end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHARED_MEM_STATUS" description=" FECSS_SHARED_MEM_STATUS " id="FECSS_SHARED_MEM_STATUS" offset="0x28" width="32">
+    
+  <bitfield begin="0" description="RESERVED" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHARED_MEM_CLK_GATE" description=" FECSS_SHARED_MEM_CLK_GATE " id="FECSS_SHARED_MEM_CLK_GATE" offset="0x2C" width="32">
+    
+  <bitfield begin="1" description="RESERVED" end="1" id="fec_enable" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="RESERVED" end="0" id="hwa_enable" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_MEM_INIT_SLICE_SEL" description=" FECSS_MEM_INIT_SLICE_SEL " id="FECSS_MEM_INIT_SLICE_SEL" offset="0x30" width="32">
+    
+  <bitfield begin="1" description="RESERVED" end="0" id="cfg_mem_init_slice_sel" rwaccess="RW" width="2"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_INIT0" description=" FECSS_RAM_MEM_INIT0 " id="FECSS_RAM_MEM_INIT0" offset="0x34" width="32">
+    
+  <bitfield begin="0" description="Write_pulse bit field:#br#Writing 1'b1 will start initialization of FECSS_RAM . Value in each row is initialized to 0x00_0000_0000" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_DONE0" description=" FECSS_RAM_MEM_DONE0 " id="FECSS_RAM_MEM_DONE0" offset="0x38" width="32">
+    
+  <bitfield begin="0" description="This field will be high once initialization of FECSS_RAM is finished. Writing '1' would clear the bit." end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_STATUS0" description=" FECSS_RAM_MEM_STATUS0 " id="FECSS_RAM_MEM_STATUS0" offset="0x3C" width="32">
+    
+  <bitfield begin="0" description="1'b0: No initialization is happening for FECSS_RAM#br#1'b1: Initialization is in progress for FECCS_RAM" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_GPADC_MEM_INIT" description=" FECSS_GPADC_MEM_INIT " id="FECSS_GPADC_MEM_INIT" offset="0x40" width="32">
+    
+  <bitfield begin="0" description="Write_pulse bit field:#br#Writing 1'b1 will start initialization of GPADC Memory . Value in each row is initialized to 0x3FF" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_GPADC_MEM_DONE" description=" FECSS_GPADC_MEM_DONE " id="FECSS_GPADC_MEM_DONE" offset="0x44" width="32">
+    
+  <bitfield begin="0" description="This field will be high once initialization of GPADC Memory is finished. Writing '1' would clear the bit." end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_GPADC_MEM_STATUS" description=" FECSS_GPADC_MEM_STATUS " id="FECSS_GPADC_MEM_STATUS" offset="0x48" width="32">
+    
+  <bitfield begin="0" description="1'b0: No initialization is happening for GPADC Memory#br#1'b1: Initialization is in progress for GPADC Memory" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_TIMING_ENGINE_MEM_INIT" description=" FECSS_TIMING_ENGINE_MEM_INIT " id="FECSS_TIMING_ENGINE_MEM_INIT" offset="0x4C" width="32">
+    
+  <bitfield begin="0" description="Write_pulse bit field:#br#Writing 1'b1 will start initialization of Timing Engine Memory . Value in each row is initialized to 0x00_0000_0000" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_TIMING_ENGINE_MEM_DONE" description=" FECSS_TIMING_ENGINE_MEM_DONE " id="FECSS_TIMING_ENGINE_MEM_DONE" offset="0x50" width="32">
+    
+  <bitfield begin="0" description="This field will be high once initialization of Timing Engine Memory is finished. Writing '1' would clear the bit." end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_TIMING_ENGINE_MEM_STATUS" description=" FECSS_TIMING_ENGINE_MEM_STATUS " id="FECSS_TIMING_ENGINE_MEM_STATUS" offset="0x54" width="32">
+    
+  <bitfield begin="0" description="1'b0: No initialization is happening for Timing Engine Memory#br#1'b1: Initialization is in progress for Timing Engine Memory" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SW_INT" description=" FECSS_SW_INT " id="FECSS_SW_INT" offset="0x58" width="32">
+    
+  <bitfield begin="3" description="Write_pulse bit field:#br#Wiriting 1'b1 to each bit will trigger FECSS_SW_INT &amp;lt;0-3&amp;gt; respectively to CM3." end="0" id="pulse" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IPC_RFS" description=" FECSS_IPC_RFS " id="FECSS_IPC_RFS" offset="0x5C" width="32">
+    
+  <bitfield begin="31" description="Used by software to communicate commands and response. It is 7-bits per interrupt.  This IPC is for communcation between FECSS and APPSS." end="4" id="response" rwaccess="RW" width="28"></bitfield>
+    
+  <bitfield begin="3" description="Write_pulse bit field:#br#Wiriting 1'b1 to each bit will trigger FEC_INTR &amp;lt;0-3&amp;gt; respectively to CM4. This IPC is for communcation between FECSS and APPSS." end="0" id="fec_intr" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IPC_BUSY_INT0" description=" FECSS_IPC_BUSY_INT0 " id="FECSS_IPC_BUSY_INT0" offset="0x60" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and APPSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IPC_BUSY_INT1" description=" FECSS_IPC_BUSY_INT1 " id="FECSS_IPC_BUSY_INT1" offset="0x64" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and APPSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IPC_BUSY_INT2" description=" FECSS_IPC_BUSY_INT2 " id="FECSS_IPC_BUSY_INT2" offset="0x68" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and APPSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IPC_BUSY_INT3" description=" FECSS_IPC_BUSY_INT3 " id="FECSS_IPC_BUSY_INT3" offset="0x6C" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and APPSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_WIC_STAT_CLR" description=" FECSS_WIC_STAT_CLR " id="FECSS_WIC_STAT_CLR" offset="0x70" width="32">
+    
+  <bitfield begin="31" description="1 =&amp;gt; Writing 1 to this bit, will clear the WIC_STAT status register of the corresponding bit. Self-clearing#br#0 =&amp;gt; Writing 0 to this bit, leavesWIC_STAT status register unchanged for the corresponding bit.#br##br#WIC line:#br#0 = FRAMETIMER_FRAME_START (INT#12)#br#1 = CHIRP TIMER FRAME END (INT#13)#br#2 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME1 (INT#16)#br#3 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME2 (INT#17)#br#4 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME3 (INT#18)#br#5 = BURST_START_OFFSET_TIME (INT#19)#br#6 = CHIRPTIMER_CHIRP_START (INT#8)#br#7 = CHIRPTIMER_BURST_START (INT#10)#br#8 = CHIRPTIMER_BURST_END (INT#11)#br#9 = CHIRPTIMER_CHIRP_END (INT#9)#br#10 = HOST_INTRundefined (INT#15)#br#11 = HOST_INTRundefined (INT#1)#br#12 = HOST_INTRundefined (INT#2)#br#13 = FECSS_CTRL:: FECSS_IRQ_REQ_SELECTundefined ? HOST_INTRundefined : DSS_HOST_INTRundefined (INT#3)#br#14 = DSS_HOST_INTRundefined (INT#23)#br#15 = DSS_HOST_INTRundefined (INT#24)#br#16 = DSS_HOST_INTRundefined (INT#25)#br#17 = 1'b0 (part of INT#26)#br#18 = SYNC_IN (INT#29)#br#19 = FFT data Capture Done (INT#20)#br#20 = BIST FFT Done (INT#21)#br#21 = gpadc_ifm_done (INT#22)#br#22 = WKUP_INTR (INT#31)#br#31:23 = RESERVED" end="0" id="fecss_wic_stat_clr" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_WIC_STAT" description=" FECSS_WIC_STAT " id="FECSS_WIC_STAT" offset="0x74" width="32">
+    
+  <bitfield begin="31" description="1 =&amp;gt; Interrupt bit set. The interupt bit is sticky bit. Should be cleared using WIC_STAT_CLR register or subsystem reset.#br#0 -&amp;gt; Interrupt bit not set.#br#Sticky bits keep their value when they changed to logical 1 and is cleared only by writing 1 to WIC_STAT_CLR register.#br##br#WIC line:#br#0 = FRAMETIMER_FRAME_START (INT#12)#br#1 = CHIRP TIMER FRAME END (INT#13)#br#2 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME1 (INT#16)#br#3 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME2 (INT#17)#br#4 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME3 (INT#18)#br#5 = BURST_START_OFFSET_TIME (INT#19)#br#6 = CHIRPTIMER_CHIRP_START (INT#8)#br#7 = CHIRPTIMER_BURST_START (INT#10)#br#8 = CHIRPTIMER_BURST_END (INT#11)#br#9 = CHIRPTIMER_CHIRP_END (INT#9)#br#10 = HOST_INTRundefined (INT#15)#br#11 = HOST_INTRundefined (INT#1)#br#12 = HOST_INTRundefined (INT#2)#br#13 = FECSS_CTRL:: FECSS_IRQ_REQ_SELECTundefined ? HOST_INTRundefined : DSS_HOST_INTRundefined (INT#3)#br#14 = DSS_HOST_INTRundefined (INT#23)#br#15 = DSS_HOST_INTRundefined (INT#24)#br#16 = DSS_HOST_INTRundefined (INT#25)#br#17 = 1'b0 (part of INT#26)#br#18 = SYNC_IN (INT#29)#br#19 = FFT data Capture Done (INT#20)#br#20 = BIST FFT Done (INT#21)#br#21 = gpadc_ifm_done (INT#22)#br#22 = WKUP_INTR (INT#31)#br#31:23 = RESERVED" end="0" id="fecss_wic_stat" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_WIC_MASK" description=" FECSS_WIC_MASK " id="FECSS_WIC_MASK" offset="0x78" width="32">
+    
+  <bitfield begin="31" description="1 =&amp;gt; The corresponding interrupt is Masked (interrupt will not be generated)#br#0 =&amp;gt; The corresponding interrupt is UnMasked (interrupt will  be generated)#br##br#WIC line:#br#0 = FRAMETIMER_FRAME_START (INT#12)#br#1 = CHIRP TIMER FRAME END (INT#13)#br#2 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME1 (INT#16)#br#3 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME2 (INT#17)#br#4 = FRAMETIMER_FRAME_START_OFFSET_INTR_TIME3 (INT#18)#br#5 = BURST_START_OFFSET_TIME (INT#19)#br#6 = CHIRPTIMER_CHIRP_START (INT#8)#br#7 = CHIRPTIMER_BURST_START (INT#10)#br#8 = CHIRPTIMER_BURST_END (INT#11)#br#9 = CHIRPTIMER_CHIRP_END (INT#9)#br#10 = HOST_INTRundefined (INT#15)#br#11 = HOST_INTRundefined (INT#1)#br#12 = HOST_INTRundefined (INT#2)#br#13 = FECSS_CTRL:: FECSS_IRQ_REQ_SELECTundefined ? HOST_INTRundefined : DSS_HOST_INTRundefined (INT#3)#br#14 = DSS_HOST_INTRundefined (INT#23)#br#15 = DSS_HOST_INTRundefined (INT#24)#br#16 = DSS_HOST_INTRundefined (INT#25)#br#17 = 1'b0 (part of INT#26)#br#18 = SYNC_IN (INT#29)#br#19 = FFT data Capture Done (INT#20)#br#20 = BIST FFT Done (INT#21)#br#21 = gpadc_ifm_done (INT#22)#br#22 = WKUP_INTR (INT#31)#br#31:23 = RESERVED" end="0" id="fecss_wic_mask" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_WICEN" description=" FECSS_WICEN " id="FECSS_WICEN" offset="0x7C" width="32">
+    
+  <bitfield begin="0" description="Reserved" end="0" id="fecss_wicen" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_FORCEFCLKACTIVE" description=" FECSS_FORCEFCLKACTIVE " id="FECSS_FORCEFCLKACTIVE" offset="0x80" width="32">
+    
+  <bitfield begin="0" description="1 :&amp;gt; Forces FCLK to be active and inhibits CM3 Entering CPU DeepSleep mode#br#0 :&amp;gt; Allows gating of FCLK based on CPU DEEPSLEEP entry mechanism" end="0" id="fecss_forcefclkactive" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_IRQ_REQ" description=" FECSS_IRQ_REQ " id="FECSS_IRQ_REQ" offset="0x84" width="32">
+    
+  <bitfield begin="31" description="Used to select interrupts going to FECSS IRQ. Bit definitions:#br#0 : Selects one of the following to connect to IRQ14#br#     0x0 = ADC_START_TIME_FRAC (ADC Valid start interrupt from frame timer module)#br#     0x1 = CHIRP_START_RAMPING interrupt#br#1 : Selects one of the following to connect to IRQ26#br#      0x0 = DCC2_DONE_INT#br#      0x1 = DCC1_DONE_INT#br#3:2 : Selects one of the following to connect to IRQ21#br#   0x0 = BistFFT_DONE#br#   0x1 = CM3 LBIST Interrupt#br#   0x2 = TOP PBIST Interrupt#br#   0x3 = Reserved#br#4 : Selects one of the following to connect to IRQ30#br#      0x0 = RESERVED#br#      0x1 = CTI_INT_REQundefined#br#5 : Selects one of the following to connect to IRQ28#br#      0x0 = GIO_INT2 (PWAKEUP IO Signal)#br#      0x1 = CTI_INT_REQundefined#br#6 : Selects one of the following to connect to IRQ3#br#      0x0 = MSB of Interrupt from DSS. Host process in DSS, set the register in DSS_CTRL and generate the interrupt#br#      0x1 = MSB of Interrupt from APPSS. Host process in APPSS, set the register in APPSS_CTRL and generate the interrupt" end="0" id="select" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_ERRAGG_MASK0" description=" FECSS_ERRAGG_MASK0 " id="FECSS_ERRAGG_MASK0" offset="0x88" width="32">
+    
+  <bitfield begin="14" description="Mask Interrupt from AHB_SLAVES to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="14" id="fec_ahb_slv_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="13" description="Mask Interrupt from AHB_SLAVES to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="13" id="fec_ahb_slv_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="12" description="Mask Interrupt from FEC_SHARED_MEM to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="12" id="fec_shared_mem_err" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="11" description="Mask Interrupt from FEC_AHB to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="11" id="fec_ahb_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="10" description="Mask Interrupt from FEC_MPU to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="10" id="fec_mpu_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="9" description="Mask Interrupt from FEC_ANA to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="9" id="fec_ana_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="8" description="Mask Interrupt from FEC_ANA to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="8" id="fec_ana_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="7" description="Mask Interrupt from FEC_CTRL to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="7" id="fec_ctrl_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="6" description="Mask Interrupt from FEC_CTRL to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="6" id="fec_ctrl_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Mask Interrupt from TIMING_ENGINE to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="5" id="timing_engine_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="4" description="Mask Interrupt from TIMING_ENGINE to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="4" id="timing_engine_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="3" description="Mask Interrupt from RADAR_CFG to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="3" id="radar_cfg_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Mask Interrupt from RADAR_CFG to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="2" id="radar_cfg_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Mask Interrupt from FEC_RCM to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="1" id="fec_rcm_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Mask Interrupt from FEC_RCM to aggregated Interrupt FECSS_ERRAGG_STATUS0#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked" end="0" id="fec_rcm_rd" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_ERRAGG_STATUS0" description=" FECSS_ERRAGG_STATUS0 " id="FECSS_ERRAGG_STATUS0" offset="0x8C" width="32">
+    
+  <bitfield begin="14" description="Status of Interrupt from AHB_SLAVE#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="14" id="fec_ahb_slv_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="13" description="Status of Interrupt from AHB_SLAVE#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="13" id="fec_ahb_slv_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="12" description="Status of Interrupt from FEC_SHARED_MEM#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="12" id="fec_shared_mem_err" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="11" description="Status of Interrupt from FEC_AHB#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="11" id="fec_ahb_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="10" description="Status of Interrupt from FEC_MPU#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="10" id="fec_mpu_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="9" description="Status of Interrupt from FEC_ANA#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="9" id="fec_ana_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="8" description="Status of Interrupt from FEC_ANA#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="8" id="fec_ana_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="7" description="Status of Interrupt from FEC_CTRL#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="7" id="fec_ctrl_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="6" description="Status of Interrupt from FEC_CTRL#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="6" id="fec_ctrl_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Status of Interrupt from TIMING_ENGINE#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="5" id="timing_engine_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="4" description="Status of Interrupt from TIMING_ENGINE#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="4" id="timing_engine_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="3" description="Status of Interrupt from RADAR_CFG#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="3" id="radar_cfg_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Status of Interrupt from RADAR_CFG#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="2" id="radar_cfg_rd" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Status of Interrupt from FEC_RCM#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="1" id="fec_rcm_wr" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Status of Interrupt from FEC_RCM#br#Set only if Interupt is unmasked in FECSS_ERRAGG_MASK0#br#Wrie 0x1 to clear this interrupt." end="0" id="fec_rcm_rd" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_ERRAGG_MASK1" description=" FECSS_ERRAGG_MASK1 " id="FECSS_ERRAGG_MASK1" offset="0x90" width="32">
+    
+  <bitfield begin="31" description="TI Reserved" end="0" id="set" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_ERRAGG_STATUS1" description=" FECSS_ERRAGG_STATUS1 " id="FECSS_ERRAGG_STATUS1" offset="0x94" width="32">
+    
+  <bitfield begin="31" description="TI Reserved" end="0" id="set" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_INTMASK1" description=" FECSS_INTMASK1 " id="FECSS_INTMASK1" offset="0x98" width="32">
+    
+  <bitfield begin="31" description="Interrupt Mask#br#1 : Interrupt is Masked#br#0 : Interrupt is Unmasked#br#Bit 0   : - #br#Destination         -  app_ss_irq_map     #br#Signals Masked  -  chirptimer_chirp_start, chirptimer_chirp_end, chirptimer_burst_start, chirptimer_burst_end, chirptimer_frame_end, adc_start_time_frac_intr, burst_start_offset_intr  #br#Bit 1 : - #br#Destination -  app_ss_irq_map  #br#Signals Masked -  cm3_libist_int#br#Bit 2 : -#br#Destination -  app_ss_tpcca_trig_map , app_ss_irq_map #br#Signals Masked -  fec_int (3:0)#br#Bit 3 : -#br#Destination -  rdif              #br#Signals Masked -  dfe_rx_data_out_valid, rx_sat_cnt_valid, rx_dfe_start#br#Bit 4: -#br#Destination -  BistFFT  #br#Signals Masked -  dfe_rx_data_out_valid#br#Bit 5:-#br#Destination -  ADCBUF            #br#Signals Masked -  dfe_rx_data_out_valid#br#Bit 6:-#br#Destination - dss_irq_map#br#Signals Masked - dss_fec_int (3:0)" end="0" id="set" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_INTMASK2" description=" FECSS_INTMASK2 " id="FECSS_INTMASK2" offset="0x9C" width="32">
+    
+  <bitfield begin="31" description="TI Reserved" end="0" id="set" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TIMEOUT_PCR1" description=" CFG_TIMEOUT_PCR1 " id="CFG_TIMEOUT_PCR1" offset="0xA0" width="32">
+    
+  <bitfield begin="31" description="PCR1 Timeout Value" end="0" id="value" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL37" description=" FESS_CTRL37 " id="FESS_CTRL37" offset="0xA4" width="32">
+    
+  <bitfield begin="31" description="HW reserved Register" end="0" id="fess_ctrl37" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL38" description=" FESS_CTRL38 " id="FESS_CTRL38" offset="0xA8" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl38" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL39" description=" FESS_CTRL39 " id="FESS_CTRL39" offset="0xAC" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl39" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL40" description=" FESS_CTRL40 " id="FESS_CTRL40" offset="0xB0" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl40" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL41" description=" FESS_CTRL41 " id="FESS_CTRL41" offset="0xB4" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl41" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL42" description=" FESS_CTRL42 " id="FESS_CTRL42" offset="0xB8" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl42" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL43" description=" FESS_CTRL43 " id="FESS_CTRL43" offset="0xBC" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl43" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL44" description=" FESS_CTRL44 " id="FESS_CTRL44" offset="0xC0" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl44" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL45" description=" FESS_CTRL45 " id="FESS_CTRL45" offset="0xC4" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl45" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL46" description=" FESS_CTRL46 " id="FESS_CTRL46" offset="0xC8" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl46" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL47" description=" FESS_CTRL47 " id="FESS_CTRL47" offset="0xCC" width="32">
+    
+  <bitfield begin="16" description="HW reserved Register" end="16" id="fess_ctrl47" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL48" description=" FESS_CTRL48 " id="FESS_CTRL48" offset="0xD0" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl48" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL49" description=" FESS_CTRL49 " id="FESS_CTRL49" offset="0xD4" width="32">
+    
+  <bitfield begin="16" description="HW reserved Register" end="16" id="fess_ctrl49" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FESS_CTRL50" description=" FESS_CTRL50 " id="FESS_CTRL50" offset="0xD8" width="32">
+    
+  <bitfield begin="0" description="HW reserved Register" end="0" id="fess_ctrl50" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="RESERVED0" description=" RESERVED0 " id="RESERVED0" offset="0xDC" width="32">
+    
+  <bitfield begin="15" description="RESERVED - POR Reset" end="0" id="reserved" rwaccess="RW" width="16"></bitfield>
+  </register>
+  
+  
+  <register acronym="APPSS_DYNAMIC_CLK_GATE_STATUS" description=" APPSS_DYNAMIC_CLK_GATE_STATUS " id="APPSS_DYNAMIC_CLK_GATE_STATUS" offset="0xE0" width="32">
+    
+  <bitfield begin="2" description="Dynamic Clock gate Status of TPTC2#br#1 - Clock is Enabled#br#0 - Clock is Gated." end="2" id="tptc2" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Dynamic Clock gate Status of TPTC1#br#1 - Clock is Enabled#br#0 - Clock is Gated." end="1" id="tptc1" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Dynamic Clock gate Status of XBARA#br#1 - Clock is Enabled#br#0 - Clock is Gated." end="0" id="xbara" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_OWRITE_ERR" description=" FECSS_RAM_OWRITE_ERR " id="FECSS_RAM_OWRITE_ERR" offset="0xE4" width="32">
+    
+  <bitfield begin="0" description="RAM ahb2sram write error - Sticky Bit" end="0" id="err" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_OWRITE_ERR_ADDR" description=" FECSS_RAM_OWRITE_ERR_ADDR " id="FECSS_RAM_OWRITE_ERR_ADDR" offset="0xE8" width="32">
+    
+  <bitfield begin="31" description="RAM ahb2sram write error Address" end="0" id="address" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHRD_RAM_OWRITE_ERR" description=" FECSS_SHRD_RAM_OWRITE_ERR " id="FECSS_SHRD_RAM_OWRITE_ERR" offset="0xEC" width="32">
+    
+  <bitfield begin="0" description="Shared RAM ahb2sram write error - Sticky Bit" end="0" id="err" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_SHRD_RAM_OWRITE_ERR_ADDR" description=" FECSS_SHRD_RAM_OWRITE_ERR_ADDR " id="FECSS_SHRD_RAM_OWRITE_ERR_ADDR" offset="0xF0" width="32">
+    
+  <bitfield begin="31" description="Shared RAM ahb2sram write error Address" end="0" id="address" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_OWRITE_ERR_AGGR" description=" FECSS_OWRITE_ERR_AGGR " id="FECSS_OWRITE_ERR_AGGR" offset="0xF4" width="32">
+    
+  <bitfield begin="0" description="Ored  error of all write error signals -Sticky Bit" end="0" id="err" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_RW0" description=" HW_SPARE_RW0 " id="HW_SPARE_RW0" offset="0xF8" width="32">
+    
+  <bitfield begin="31" description="Reserved for HW R&amp;amp;D" end="0" id="hw_spare_rw0" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_RW1" description=" HW_SPARE_RW1 " id="HW_SPARE_RW1" offset="0xFC" width="32">
+    
+  <bitfield begin="31" description="Reserved for HW R&amp;amp;D" end="0" id="hw_spare_rw1" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="CM3_CPU_HALT_HANDSHAKE" description=" CM3_CPU_HALT_HANDSHAKE " id="CM3_CPU_HALT_HANDSHAKE" offset="0x100" width="32">
+    
+  <bitfield begin="31" description="CM3_CPU_HALT_HANDSHAKE" end="0" id="value" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_INIT1" description=" FECSS_RAM_MEM_INIT1 " id="FECSS_RAM_MEM_INIT1" offset="0x104" width="32">
+    
+  <bitfield begin="0" description="Write_pulse bit field:#br#Writing 1'b1 will start initialization of FECSS_RAM . Value in each row is initialized to 0x00_0000_0000" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_DONE1" description=" FECSS_RAM_MEM_DONE1 " id="FECSS_RAM_MEM_DONE1" offset="0x108" width="32">
+    
+  <bitfield begin="0" description="This field will be high once initialization of FECSS_RAM is finished. Writing '1' would clear the bit." end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_STATUS1" description=" FECSS_RAM_MEM_STATUS1 " id="FECSS_RAM_MEM_STATUS1" offset="0x10C" width="32">
+    
+  <bitfield begin="0" description="1'b0: No initialization is happening for FECSS_RAM#br#1'b1: Initialization is in progress for FECCS_RAM" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_INIT2" description=" FECSS_RAM_MEM_INIT2 " id="FECSS_RAM_MEM_INIT2" offset="0x110" width="32">
+    
+  <bitfield begin="0" description="Write_pulse bit field:#br#Writing 1'b1 will start initialization of FECSS_RAM . Value in each row is initialized to 0x00_0000_0000" end="0" id="mem_init" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_DONE2" description=" FECSS_RAM_MEM_DONE2 " id="FECSS_RAM_MEM_DONE2" offset="0x114" width="32">
+    
+  <bitfield begin="0" description="This field will be high once initialization of FECSS_RAM is finished. Writing '1' would clear the bit." end="0" id="mem_init_done" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_RAM_MEM_STATUS2" description=" FECSS_RAM_MEM_STATUS2 " id="FECSS_RAM_MEM_STATUS2" offset="0x118" width="32">
+    
+  <bitfield begin="0" description="1'b0: No initialization is happening for FECSS_RAM#br#1'b1: Initialization is in progress for FECCS_RAM" end="0" id="mem_init_status" rwaccess="R" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DSS_IPC_RFS" description=" FECSS_DSS_IPC_RFS " id="FECSS_DSS_IPC_RFS" offset="0x11C" width="32">
+    
+  <bitfield begin="31" description="Used by software to communicate commands and response. It is 7-bits per interrupt.  This IPC is for communcation between FECSS and DSS." end="4" id="response" rwaccess="RW" width="28"></bitfield>
+    
+  <bitfield begin="3" description="Write_pulse bit field:#br#Wiriting 1'b1 to each bit will trigger FEC_INTR &amp;lt;0-3&amp;gt; respectively to CM4. This IPC is for communcation between FECSS and DSS." end="0" id="fec_intr" rwaccess="RW" width="4"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DSS_IPC_BUSY_INT0" description=" FECSS_DSS_IPC_BUSY_INT0 " id="FECSS_DSS_IPC_BUSY_INT0" offset="0x120" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and DSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DSS_IPC_BUSY_INT1" description=" FECSS_DSS_IPC_BUSY_INT1 " id="FECSS_DSS_IPC_BUSY_INT1" offset="0x124" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and DSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DSS_IPC_BUSY_INT2" description=" FECSS_DSS_IPC_BUSY_INT2 " id="FECSS_DSS_IPC_BUSY_INT2" offset="0x128" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and DSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_DSS_IPC_BUSY_INT3" description=" FECSS_DSS_IPC_BUSY_INT3 " id="FECSS_DSS_IPC_BUSY_INT3" offset="0x12C" width="32">
+    
+  <bitfield begin="0" description="This field will be high for the corresponding interrupt coming from CM4. Writing '1' would clear the bit.  This IPC is for communcation between FECSS and DSS." end="0" id="flag" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_BIST_FFT_OWRITE_ERR" description=" FECSS_BIST_FFT_OWRITE_ERR " id="FECSS_BIST_FFT_OWRITE_ERR" offset="0x130" width="32">
+    
+  <bitfield begin="0" description="BIST_FFT ahb2sram write error - Sticky Bit" end="0" id="err" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="FECSS_BIST_FFT_OWRITE_ERR_ADDR" description=" FECSS_BIST_FFT_OWRITE_ERR_ADDR " id="FECSS_BIST_FFT_OWRITE_ERR_ADDR" offset="0x134" width="32">
+    
+  <bitfield begin="31" description="BIST_FFT ahb2sram write error Address" end="0" id="address" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TIMEOUT_PCR2" description=" CFG_TIMEOUT_PCR2 " id="CFG_TIMEOUT_PCR2" offset="0x138" width="32">
+    
+  <bitfield begin="31" description="Timeout for PCR2" end="0" id="timeout" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="CFG_TIMEOUT_PCR3" description=" CFG_TIMEOUT_PCR3 " id="CFG_TIMEOUT_PCR3" offset="0x13C" width="32">
+    
+  <bitfield begin="31" description="Timeout for PCR3" end="0" id="timeout" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RW2" description=" HW_SPARE_REG_RW2 " id="HW_SPARE_REG_RW2" offset="0x140" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RW3" description=" HW_SPARE_REG_RW3 " id="HW_SPARE_REG_RW3" offset="0x144" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RO0" description=" HW_SPARE_REG_RO0 " id="HW_SPARE_REG_RO0" offset="0x148" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RO1" description=" HW_SPARE_REG_RO1 " id="HW_SPARE_REG_RO1" offset="0x14C" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RO2" description=" HW_SPARE_REG_RO2 " id="HW_SPARE_REG_RO2" offset="0x150" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_RO3" description=" HW_SPARE_REG_RO3 " id="HW_SPARE_REG_RO3" offset="0x154" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_WPH0" description=" HW_SPARE_REG_WPH0 " id="HW_SPARE_REG_WPH0" offset="0x158" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_WPH1" description=" HW_SPARE_REG_WPH1 " id="HW_SPARE_REG_WPH1" offset="0x15C" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_WPH2" description=" HW_SPARE_REG_WPH2 " id="HW_SPARE_REG_WPH2" offset="0x160" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_WPH3" description=" HW_SPARE_REG_WPH3 " id="HW_SPARE_REG_WPH3" offset="0x164" width="32">
+    
+  <bitfield begin="31" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC0" description=" HW_SPARE_REG_REC0 " id="HW_SPARE_REG_REC0" offset="0x168" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC1" description=" HW_SPARE_REG_REC1 " id="HW_SPARE_REG_REC1" offset="0x16C" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC2" description=" HW_SPARE_REG_REC2 " id="HW_SPARE_REG_REC2" offset="0x170" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC3" description=" HW_SPARE_REG_REC3 " id="HW_SPARE_REG_REC3" offset="0x174" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC4" description=" HW_SPARE_REG_REC4 " id="HW_SPARE_REG_REC4" offset="0x178" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC5" description=" HW_SPARE_REG_REC5 " id="HW_SPARE_REG_REC5" offset="0x180" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC6" description=" HW_SPARE_REG_REC6 " id="HW_SPARE_REG_REC6" offset="0x184" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="HW_SPARE_REG_REC7" description=" HW_SPARE_REG_REC7 " id="HW_SPARE_REG_REC7" offset="0x188" width="32">
+    
+  <bitfield begin="0" description="TI RESERVED" end="0" id="spare_reg" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK0" description="  - KICK0 component " id="LOCK0_KICK0" offset="0x1008" width="32">
+    
+  <bitfield begin="31" description=" - KICK0 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="LOCK0_KICK1" description="  - KICK1 component " id="LOCK0_KICK1" offset="0x100C" width="32">
+    
+  <bitfield begin="31" description=" - KICK1 component" end="0" id="" rwaccess="RW" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_raw_status" description=" Interrupt Raw Status/Set Register " id="intr_raw_status" offset="0x1010" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Raw status is read. Write a 1 to set the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enabled_status_clear" description=" Interrupt Enabled Status/Clear register " id="intr_enabled_status_clear" offset="0x1014" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error. Enabled status is read. Write a 1 to clear the status. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable" description=" Interrupt Enable register " id="intr_enable" offset="0x1018" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable. Write a 1 to set the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="intr_enable_clear" description=" Interrupt Enable Clear register " id="intr_enable_clear" offset="0x101C" width="32">
+    
+  <bitfield begin="3" description="Proxy0 access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="3" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="2" description="Kick access violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="2" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="1" description="Addressing violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="1" id="" rwaccess="RW" width="1"></bitfield>
+    
+  <bitfield begin="0" description="Protection violation error enable clear. Write a 1 to clear the enable. Writing a 0 has no effect." end="0" id="" rwaccess="RW" width="1"></bitfield>
+  </register>
+  
+  
+  <register acronym="eoi" description=" EOI register " id="eoi" offset="0x1020" width="32">
+    
+  <bitfield begin="7" description="EOI vector value. Write this with interrupt distribution value in the chip." end="0" id="" rwaccess="RW" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_address" description=" Fault Address register " id="fault_address" offset="0x1024" width="32">
+    
+  <bitfield begin="31" description="Fault Address." end="0" id="" rwaccess="R" width="32"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_type_status" description=" Fault Type Status register " id="fault_type_status" offset="0x1028" width="32">
+    
+  <bitfield begin="6" description="Non-secure access." end="6" id="" rwaccess="R" width="1"></bitfield>
+    
+  <bitfield begin="5" description="Fault Type #br# 10_0000 = Supervisor read  fault  - priv = 1 dir = 1 dtype != 1 #br#  01_0000 = Supervisor write fault  - priv = 1 dir = 0 #br# 00_1000 = Supervisor execute fault - priv = 1 dir = 1 dtype = 1 #br# 00_0100 = User read  fault - priv = 0 dir = 1 dtype = 1 #br# 00_0010 = User write fault - priv = 0 dir = 0 #br# 00_0001 = User execute fault - priv = 0 dir = 1 dtype = 1 #br# 00_0000 = No fault" end="0" id="" rwaccess="R" width="6"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_attr_status" description=" Fault Attribute Status register " id="fault_attr_status" offset="0x102C" width="32">
+    
+  <bitfield begin="31" description="XID." end="20" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="19" description="Route ID." end="8" id="" rwaccess="R" width="12"></bitfield>
+    
+  <bitfield begin="7" description="Privilege ID." end="0" id="" rwaccess="R" width="8"></bitfield>
+  </register>
+  
+  
+  <register acronym="fault_clear" description=" Fault Clear register " id="fault_clear" offset="0x1030" width="32">
+    
+  <bitfield begin="0" description="Fault clear. Writing a 1 clears the current fault. Writing a 0 has no effect." end="0" id="" rwaccess="W" width="1"></bitfield>
+  </register>
+</module>
