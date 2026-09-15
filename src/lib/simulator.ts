@@ -32,6 +32,7 @@ export class VirtualMMU {
         { name: 'DSS_L2', base: 0x80800000, size: 384 * 1024, data: new Uint8Array(384 * 1024) },
         { name: 'DSS_L3_NATIVE', base: 0x88000000, size: 1.4 * 1024 * 1024, data: new Uint8Array(1.4 * 1024 * 1024) },
         { name: 'EXT_FLASH', base: 0x70000000, size: 32 * 1024 * 1024, data: new Uint8Array(32 * 1024 * 1024) },
+        { name: 'PINMUX', base: 0x5A000000, size: 4096, data: new Uint8Array(4096) },
         // 8x8 Transceiver Control Registers for AWRL6888
         { name: 'APP_CTRL', base: 0x56060000, size: 4096, data: new Uint8Array(4096) }
       ];
@@ -43,6 +44,7 @@ export class VirtualMMU {
         { name: 'DSS_L2', base: 0x80800000, size: 384 * 1024, data: new Uint8Array(384 * 1024) },
         { name: 'DSS_L3_NATIVE', base: 0x88000000, size: 512 * 1024, data: new Uint8Array(512 * 1024) },
         { name: 'EXT_FLASH', base: 0x70000000, size: 32 * 1024 * 1024, data: new Uint8Array(32 * 1024 * 1024) },
+        { name: 'PINMUX', base: 0x5A000000, size: 4096, data: new Uint8Array(4096) },
       ];
       this.sim.log('MMU', 'Reconfigured memory regions for AWRL6844 (4T4R)', 'info');
     }

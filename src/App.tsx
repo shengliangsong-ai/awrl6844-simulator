@@ -291,7 +291,7 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {appMode === 'hardware' ? (
           <div className="w-full p-4 overflow-y-auto">
-            <LiveHardwareDebug />
+            <LiveHardwareDebug sim={sim} />
           </div>
         ) : (
           <>

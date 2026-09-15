@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Cpu, Plug, Settings, Database, Activity, RefreshCw, Play, Square, AlertTriangle, Link2, Link2Off, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { Simulator } from '../lib/simulator';
 
 type ConnectionType = 'uart' | 'can' | 'jtag';
 
@@ -47,7 +48,11 @@ const INITIAL_REGISTERS: RegisterDef[] = [
   { name: 'PADAN_CFG_REG', address: '0x5A000034', description: 'Ball T10 (UARTA_tx, LIN_tx, CAN_FD_tx)', defaultValue: 0x00000000, currentValue: null, isReading: false }
 ];
 
-export const LiveHardwareDebug: React.FC = () => {
+export interface LiveHardwareDebugProps {
+  sim: Simulator;
+}
+
+export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => {
   const [connType, setConnType] = useState<ConnectionType>('uart');
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -71,6 +76,17 @@ export const LiveHardwareDebug: React.FC = () => {
   useEffect(() => {
     endOfLogsRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  useEffect(() => {
+    // Initialize PINMUX default values in SIM memory on mount
+    INITIAL_REGISTERS.forEach(reg => {
+      try {
+        sim.mmu.writeWord(parseInt(reg.address, 16), reg.defaultValue);
+      } catch (e) {
+        // Ignore errors if memory region doesn't exist
+      }
+    });
+  }, [sim]);
 
   const handleConnect = async () => {
     if (isConnected) {
@@ -130,15 +146,50 @@ export const LiveHardwareDebug: React.FC = () => {
       setLogs(prev => [...prev, `[ERROR] Cannot read memory. Device not connected.`]);
       return;
     }
+    const addr = parseInt(regAddr, 16);
+    if (isNaN(addr)) {
+      setLogs(prev => [...prev, `[ERROR] Invalid address format.`]);
+      return;
+    }
+    
     setLogs(prev => [...prev, `[${connType.toUpperCase()}/AHB] Reading address ${regAddr}...`]);
     
     // Simulate read delay
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 150));
     
-    // Generate a fake memory value
-    const fakeVal = '0x' + Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0').toUpperCase();
-    setRegVal(fakeVal);
-    setLogs(prev => [...prev, `[${connType.toUpperCase()}/AHB] Read ${regAddr} -> ${fakeVal}`]);
+    try {
+      const val = sim.mmu.readWord(addr);
+      const hexVal = '0x' + val.toString(16).padStart(8, '0').toUpperCase();
+      setRegVal(hexVal);
+      setLogs(prev => [...prev, `[${connType.toUpperCase()}/AHB] Read ${regAddr} -> ${hexVal}`]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, `[ERROR] ${e.message}`]);
+    }
+  };
+
+  const handleWriteMemory = async () => {
+    if (!isConnected) {
+      setLogs(prev => [...prev, `[ERROR] Cannot write memory. Device not connected.`]);
+      return;
+    }
+    const addr = parseInt(regAddr, 16);
+    const val = parseInt(regVal, 16);
+    if (isNaN(addr) || isNaN(val)) {
+      setLogs(prev => [...prev, `[ERROR] Invalid address or value format.`]);
+      return;
+    }
+    
+    setLogs(prev => [...prev, `[${connType.toUpperCase()}/AHB] Writing to address ${regAddr}...`]);
+    
+    // Simulate write delay
+    await new Promise(r => setTimeout(r, 150));
+    
+    try {
+      sim.mmu.writeWord(addr, val);
+      setLogs(prev => [...prev, `[${connType.toUpperCase()}/AHB] Wrote 0x${val.toString(16).padStart(8, '0').toUpperCase()} to ${regAddr}`]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, `[ERROR] ${e.message}`]);
+    }
   };
 
   const handleReadRegisterMap = async (index: number) => {
@@ -160,9 +211,12 @@ export const LiveHardwareDebug: React.FC = () => {
 
     await new Promise(r => setTimeout(r, 400)); // Simulate hardware delay
 
-    // Simulate reading the default value, but occasionally flip a couple of bits (e.g. changing MUX mode)
-    const mockBitFlip = Math.floor(Math.random() * 15); // Random change in the bottom 4 bits (MUX MODE)
-    const currentVal = reg.defaultValue | mockBitFlip;
+    let currentVal = reg.defaultValue;
+    try {
+      currentVal = sim.mmu.readWord(parseInt(reg.address, 16));
+    } catch (e) {
+      setLogs(prev => [...prev, `[ERROR] Failed to read ${reg.address}`]);
+    }
 
     setRegisters(regs => {
       const newRegs = [...regs];
@@ -383,8 +437,8 @@ export const LiveHardwareDebug: React.FC = () => {
                       <input 
                         type="text" 
                         value={regVal}
-                        readOnly
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm font-mono text-emerald-400 opacity-80"
+                        onChange={(e) => setRegVal(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm font-mono text-emerald-400 opacity-80 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                     <button 
@@ -394,7 +448,7 @@ export const LiveHardwareDebug: React.FC = () => {
                       Read
                     </button>
                     <button 
-                      onClick={() => setLogs(prev => [...prev, `[ERROR] Write protected or unsupported via ${connType.toUpperCase()} in current mode.`])}
+                      onClick={handleWriteMemory}
                       className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-slate-700"
                     >
                       Write
