@@ -302,7 +302,7 @@ export default function App() {
           </div>
         ) : appMode === 'hardware' ? (
           <div className="w-full p-4 overflow-y-auto">
-            <LiveHardwareDebug sim={sim} />
+            <LiveHardwareDebug sim={sim} onNavigateToRegisters={() => setAppMode('registers')} />
           </div>
         ) : (
           <>

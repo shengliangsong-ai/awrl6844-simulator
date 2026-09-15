@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Cpu, Plug, Settings, Database, Activity, RefreshCw, Play, Square, AlertTriangle, Link2, Link2Off, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { Simulator } from '../lib/simulator';
+import { parseRegisterXML, ModuleDef } from '../lib/xmlParser';
+
+const xmlModules = import.meta.glob('/src/data/*.xml', { query: '?raw', import: 'default' }) as Record<string, () => Promise<string>>;
 
 type ConnectionType = 'uart' | 'can' | 'jtag';
 
@@ -50,14 +53,69 @@ const INITIAL_REGISTERS: RegisterDef[] = [
 
 export interface LiveHardwareDebugProps {
   sim: Simulator;
+  onNavigateToRegisters?: () => void;
 }
 
-export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => {
+export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim, onNavigateToRegisters }) => {
   const [connType, setConnType] = useState<ConnectionType>('uart');
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'console' | 'registers'>('console');
+  
+  // Custom Modules State
+  const [modules, setModules] = useState<ModuleDef[]>([]);
+  const [selectedModuleId, setSelectedModuleId] = useState<string>('PINMUX');
   const [registers, setRegisters] = useState<RegisterDef[]>(INITIAL_REGISTERS);
+  
+  useEffect(() => {
+    const loadModules = async () => {
+      const loaded: ModuleDef[] = [];
+      for (const path in xmlModules) {
+        try {
+          const content = await xmlModules[path]();
+          const parsed = parseRegisterXML(content);
+          if (parsed) {
+            loaded.push(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to load module", path, e);
+        }
+      }
+      loaded.sort((a, b) => a.id.localeCompare(b.id));
+      setModules(loaded);
+    };
+    loadModules();
+  }, []);
+
+  useEffect(() => {
+    if (selectedModuleId === 'PINMUX') {
+      setRegisters(INITIAL_REGISTERS);
+    } else {
+      const mod = modules.find(m => m.id === selectedModuleId);
+      if (mod) {
+        // Base address lookup based on module
+        let baseAddrStr = '0x00000000';
+        if (mod.id === 'APP_CTRL') baseAddrStr = '0x56060000';
+        else if (mod.id === 'TOP_PRCM' || mod.id.includes('PRCM')) baseAddrStr = '0x5A040000';
+
+        const baseAddr = parseInt(baseAddrStr, 16);
+
+        const mappedRegs: RegisterDef[] = mod.registers.map(r => {
+          const offset = parseInt(r.offset, 16);
+          const fullAddr = isNaN(baseAddr) || isNaN(offset) ? 0 : (baseAddr + offset);
+          return {
+            name: r.acronym || r.id,
+            address: '0x' + fullAddr.toString(16).toUpperCase().padStart(8, '0'),
+            description: r.description || '',
+            defaultValue: 0,
+            currentValue: null,
+            isReading: false
+          };
+        });
+        setRegisters(mappedRegs);
+      }
+    }
+  }, [selectedModuleId, modules]);
   
   // Connection Settings State
   const [uartBaud, setUartBaud] = useState('921600');
@@ -406,7 +464,7 @@ export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => 
               onClick={() => setActiveTab('registers')}
               className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'registers' ? 'bg-slate-900 text-indigo-400 border-t border-x border-slate-800' : 'text-slate-500 hover:text-slate-300'}`}
             >
-              <FileText className="w-4 h-4" /> Interactive Register Map
+              <FileText className="w-4 h-4" /> Registers & PinMux
             </button>
           </div>
 
@@ -481,21 +539,57 @@ export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => 
               </div>
             ) : (
               <div className="p-0 overflow-y-auto flex-1">
-                <div className="p-5 border-b border-slate-800 bg-slate-900/50">
-                  <h3 className="font-semibold text-slate-200 mb-1">APPSS PinMux Registers</h3>
-                  <p className="text-xs text-slate-400">
-                    Extracted from Datasheet Table 6-20 (Pin Attributes). Read live values via {connType.toUpperCase()} to verify firmware configuration.
-                  </p>
+                <div className="p-5 border-b border-slate-800 bg-slate-900/50 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-slate-200">Hardware Registers</h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Read live values via {connType.toUpperCase()} to verify firmware configuration.
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Select Module:</span>
+                      <select 
+                        value={selectedModuleId}
+                        onChange={(e) => setSelectedModuleId(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-200 font-semibold focus:outline-none focus:border-indigo-500 max-w-xs truncate"
+                      >
+                        <option value="PINMUX">APPSS PinMux (Datasheet Default)</option>
+                        {modules.map(m => (
+                          <option key={m.id} value={m.id}>{m.id}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {selectedModuleId === 'PINMUX' && (
+                    <div className="flex items-center justify-between bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-lg mt-2">
+                      <p className="text-xs text-indigo-300">
+                        Looking for more detail? Select a submodule from the dropdown, or go to the full Register Map.
+                      </p>
+                      {onNavigateToRegisters && (
+                        <button 
+                          onClick={onNavigateToRegisters}
+                          className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded shadow-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <FileText className="w-4 h-4" /> Go to Full Register Map
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950 text-slate-400 text-[10px] uppercase tracking-wider">
-                      <th className="p-3 border-b border-slate-800 font-semibold">Address / Name</th>
-                      <th className="p-3 border-b border-slate-800 font-semibold hidden md:table-cell">Description</th>
-                      <th className="p-3 border-b border-slate-800 font-semibold">Datasheet Default</th>
-                      <th className="p-3 border-b border-slate-800 font-semibold">Live Hardware Value (Bit Diff)</th>
-                      <th className="p-3 border-b border-slate-800 font-semibold text-right">Action</th>
+                      <th className="p-3 border-b border-slate-800 font-semibold w-1/4">Address / Name</th>
+                      <th className="p-3 border-b border-slate-800 font-semibold hidden md:table-cell w-1/4">Description</th>
+                      {selectedModuleId === 'PINMUX' && (
+                        <th className="p-3 border-b border-slate-800 font-semibold w-1/6">Datasheet Default</th>
+                      )}
+                      <th className="p-3 border-b border-slate-800 font-semibold w-1/4">Live Hardware Value {selectedModuleId === 'PINMUX' ? '(Bit Diff)' : ''}</th>
+                      <th className="p-3 border-b border-slate-800 font-semibold text-right w-1/6">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -508,10 +602,12 @@ export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => 
                         <td className="p-3 text-xs text-slate-400 hidden md:table-cell max-w-[200px] truncate" title={reg.description}>
                           {reg.description}
                         </td>
-                        <td className="p-3">
-                          <div className="font-mono text-xs text-slate-400">{toHex(reg.defaultValue)}</div>
-                          <div className="mt-1 font-mono text-[9px] text-slate-600 tracking-widest">{toBin(reg.defaultValue).slice(-8)}</div>
-                        </td>
+                        {selectedModuleId === 'PINMUX' && (
+                          <td className="p-3">
+                            <div className="font-mono text-xs text-slate-400">{toHex(reg.defaultValue)}</div>
+                            <div className="mt-1 font-mono text-[9px] text-slate-600 tracking-widest">{toBin(reg.defaultValue).slice(-8)}</div>
+                          </td>
+                        )}
                         <td className="p-3">
                           {reg.currentValue === null ? (
                             <span className="text-xs text-slate-600 italic">Not read</span>
@@ -519,14 +615,22 @@ export const LiveHardwareDebug: React.FC<LiveHardwareDebugProps> = ({ sim }) => 
                             <div>
                               <div className="flex items-center gap-2 font-mono text-xs text-emerald-400">
                                 {toHex(reg.currentValue)}
-                                {reg.currentValue === reg.defaultValue ? (
-                                  <CheckCircle className="w-3 h-3 text-emerald-500" />
-                                ) : (
-                                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                {selectedModuleId === 'PINMUX' && (
+                                  reg.currentValue === reg.defaultValue ? (
+                                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                                  ) : (
+                                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                  )
                                 )}
                               </div>
                               <div className="mt-1">
-                                <BitDiffVisualizer defaultVal={reg.defaultValue} currentVal={reg.currentValue} />
+                                {selectedModuleId === 'PINMUX' ? (
+                                  <BitDiffVisualizer defaultVal={reg.defaultValue} currentVal={reg.currentValue} />
+                                ) : (
+                                  <div className="font-mono text-[9px] text-slate-500 tracking-widest flex items-center gap-1">
+                                    {toBin(reg.currentValue).slice(-8)}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
