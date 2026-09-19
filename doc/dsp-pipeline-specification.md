@@ -236,6 +236,8 @@ flowchart TD
 
 ## 5. Memory Footprint and Throughput Summary
 
+### 5.1 Subsystem Memory Block Allocations
+
 | Subsystem Memory Block | Size | Base Address | Typical DSP Pipeline Allocation |
 | :--- | :--- | :--- | :--- |
 | **`HWA ACCEL_MEM`** | 128 KB | `0x05100000` | Raw ADC ping-pong buffers (4 Rx channels) |
@@ -245,3 +247,190 @@ flowchart TD
 | **`DSS L2 RAM`** | 384 KB | `0x80800000` | CFAR detection lists, AoA covariance matrices, C66x code |
 | **`APP R5F TCMA`** | 512 KB | `0x00018000` | AUTOSAR OS, tracking algorithms, CAN-FD stack |
 | **`APP R5F TCMB`** | 256 KB | `0x08000000` | Real-time interrupt vectors, stack, ESM diagnostics |
+
+---
+
+### 5.2 Stage-by-Stage Memory Consumption: Which Stage Needs the Most Memory?
+
+In the AWRL6844 mmWave radar processing pipeline, **Stage 2 (2D Doppler FFT / Radar Cube Storage & Transpose)** requires the most memory of the entire SoC.
+
+```mermaid
+barChart
+    title Memory Allocation per DSP Stage (KB)
+    x-axis ["Stage 0 (ADC)", "Stage 1 (1D FFT)", "Stage 2 (2D Doppler / Cube)", "Stage 3 (CFAR)", "Stage 4 (Clustering/AoA)", "Stage 5 (CAN-FD)"]
+    y-axis "Memory (KB)" 0 --> 1024
+    bar [256, 512, 1024, 32, 16, 1]
+```
+
+#### Detailed Stage Memory Comparison Table:
+
+| Stage # | Stage Name | Buffer / Data Structure | Memory Required | Memory Region | Hardware Unit |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Stage 0** | Analog IF Rx & ADC Sampling | Raw ADC Ping-Pong Buffers | **256 KB** | `HWA ACCEL_MEM` (`0x05100000`) | RF Analog Front-End + ADC |
+| **Stage 1** | 1D Range FFT (Range Profile) | 1D Range Profile Matrix | **256 KB – 512 KB** *(Packed 16b / Unpacked 32b)* | HWA M0–M3 Ping-Pong RAM / `DSS_L3` | HWA 1.2 Execution Core |
+| **Stage 2** | **2D Doppler FFT (Radar Cube)** | **3D Radar Cube + EDMA 3D Transpose Buffers** | **512 KB – 1,024 KB (Peak Allocation)** | **`DSS_L3` Native + Shared (`0x88000000`)** | **HWA 1.2 + EDMA Channel Controller** |
+| **Stage 3** | CFAR Detection & Peak Extraction | 2D Detection Matrix & Candidate Peak List | **16 KB – 32 KB** *(Peak list is only 1 KB – 4 KB)* | `DSS_L2` (`0x80800000`) | HWA CFAR Engine |
+| **Stage 4** | DSP Clustering & AoA Tracking | Point Cloud & Spatial Covariance Matrix | **8 KB – 16 KB** | `DSS_L2` / `APP TCMA` | C66x DSP + ARM Cortex-R5F |
+| **Stage 5** | Vehicle Gateway Communication | CAN-FD Mailbox / Message Buffers | **< 1 KB** *(64 bytes per CAN frame)* | `APP_CANCFG` (`0x52000000`) | MCAN Controller |
+
+#### In-Depth Architectural Root Causes for Stage 2 Peak Memory:
+
+1. **Slow-Time Accumulation Barrier (No Streaming Across Time)**:
+   - In **Stage 1 (1D Range FFT)**, processing can proceed **streamed chirp-by-chirp** in small ping-pong buffers ($1\text{ KB} - 2\text{ KB}$ at a time).
+   - In **Stage 2 (Doppler FFT)**, velocity resolution depends on measuring the minute phase rotation **across successive chirps**. Consequently, the hardware cannot compute the Doppler FFT on bin $k$ until **all $N_{\text{chirp}}$ chirps of the entire frame have been completely captured and buffered**:
+     $$\text{Radar Cube Size} = N_{\text{rx}} \times N_{\text{range\_bins}} \times N_{\text{chirps}} \times \text{Bytes/Sample}$$
+     $$\text{Full 3D Cube} = 4 \times 128 \times 128 \times 4\text{ Bytes (Complex 16-bit I/Q)} = \mathbf{262,144\text{ Bytes (256 KB)}}$$
+
+2. **EDMA 3D Matrix Transpose Double-Buffering Overhead**:
+   - ADC samples arrive in **fast-time order** (Sample $0 \dots 255$ of Chirp $0$, then Chirp $1 \dots$).
+   - Doppler FFT butterfly units require reading samples in **slow-time order** (Bin $k$ across all Chirps $0 \dots 127$).
+   - To prevent stalling the HWA pipeline, the EDMA engine performs an asynchronous **3D matrix transpose** while simultaneous ping-pong transfers write the incoming frame's 1D FFT results. This simultaneous double-buffering pushes peak allocation to **512 KB – 1.0 MB** inside `DSS_L3` Shared RAM.
+
+3. **BIST Architectural Consequence**:
+   - Because Stage 2 requires the vast majority of on-chip RAM ($>65\%$ of total system SRAM), attempting to execute a full Stage 2 self-test at cold boot exhausts memory and exceeds boot-time safety budgets.
+   - This proves why the **Streamed Single-Chirp BIST (Level A)** is optimal: it validates the HWA FFT butterfly units, window multiplier, and DC nulling using **Stage 1 streaming math (2.0 KB RAM)** without ever instantiating the massive Stage 2 Radar Cube.
+
+---
+
+## 6. Power-On Built-In Self-Test (BIST) under Tight Memory Constraints
+
+In automotive safety-critical applications (such as In-Cabin Child Presence Detection / CPD and Occupant Intrusion Detection), **Power-On BIST** must execute within strict boot-time budgets ($< 50\text{ ms}$) and **extremely constrained scratchpad memory** before the main operating system and dynamic radar heap allocations are initialized.
+
+### 6.1 The Memory Bottleneck Challenge
+
+During normal frame processing, the full radar pipeline utilizes:
+- **256 KB** Raw ADC Buffer ($4\text{ Rx} \times 128\text{ chirps} \times 256\text{ samples}$)
+- **256 KB – 512 KB** 1D Range Profile Matrix
+- **128 KB – 256 KB** 2D Range-Doppler Heatmap
+
+However, at cold-boot Power-On BIST:
+1. `DSS_L3` Shared RAM is uninitialized or partially reserved for bootloader execution / parity scrubs.
+2. The BIST routine must execute strictly within **local SRAM** (e.g., inside the **384 KB `DSS_L2`** or even a **16 KB – 32 KB scratchpad window** in `HWA ACCEL_MEM`).
+3. Storing a 256 KB golden input file and a 256 KB expected output matrix in Flash / ROM wastes $512\text{ KB}$ of scarce embedded non-volatile memory ($>16\%$ of total firmware allocation).
+
+```mermaid
+flowchart TD
+    subgraph CONVENTIONAL["Conventional BIST (High Memory: >512 KB)"]
+        F1["Pre-recorded 256 KB ADC File in Flash"] --> R1["Full 256 KB RAM Input Buffer"]
+        R1 --> HWA1["HWA 1.2 Full Engine"]
+        HWA1 --> R2["Full 256 KB Output Buffer"]
+        F2["Pre-stored 256 KB Golden Reference in Flash"] --> CMP1["Full Array Memcmp (256 KB)"]
+        R2 --> CMP1
+    end
+
+    subgraph OPTIMIZED["Optimized Streamed BIST (Minimal Memory: ≤ 4.5 KB)"]
+        PRNG["On-The-Fly PRNG / CORDIC Synth<br/><i>(104-byte state)</i>"] -->|Stream 1 Chirp (1 KB)| CHIRP_BUF["1 KB Chirp Scratchpad Buffer<br/><i>(256 samples × 4 B)</i>"]
+        CHIRP_BUF --> HWA2["HWA 1D FFT / Peak Engine"]
+        HWA2 --> STREAM_OUT["Streamed Output Bin / Accumulator<br/><i>(1 KB or Peak Register)</i>"]
+        ANALYTICAL["Closed-Form Analytical Math<br/><i>(Formula: k = round(2SR·N/(c0·Fs)))</i>"] --> CHECKS["On-The-Fly Verifier:<br/>1. Exact Peak Bin Match (±0)<br/>2. Running SQNR Accumulator<br/>3. Rolling CRC-32 Hash"]
+        STREAM_OUT --> CHECKS
+    end
+
+    style CONVENTIONAL fill:#1e1e2e,stroke:#ef4444,stroke-width:1.5px,color:#fee2e2
+    style OPTIMIZED fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    style PRNG fill:#1e293b,stroke:#38bdf8,color:#e0f2fe
+    style CHIRP_BUF fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style HWA2 fill:#1e293b,stroke:#818cf8,color:#e0e7ff
+    style STREAM_OUT fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style ANALYTICAL fill:#1e293b,stroke:#a78bfa,color:#ede9fe
+    style CHECKS fill:#064e3b,stroke:#34d399,stroke-width:1.5px,color:#d1fae5
+```
+
+---
+
+### 6.2 Question 1: How to Generate Test Data with Limited Memory?
+
+Instead of storing pre-recorded ADC binary dumps in Flash or allocating 256 KB RAM buffers, use **algorithmic, on-the-fly parametric synthesis**:
+
+#### A. The Streamed Single-Chirp Window Technique
+- Do not synthesize 128 chirps at once. Synthesize and test **one chirp at a time** (or even a single virtual channel).
+- Memory required: $256\text{ complex samples} \times 4\text{ bytes} = \mathbf{1,024\text{ Bytes}}$ ($1\text{ KB}$).
+- HWA 1.2 is programmed to process this single chirp through Paramset 0. The output is verified or compressed into a signature before the next chirp is generated into the same scratchpad buffer.
+
+#### B. On-the-Fly Direct Digital Synthesis (DDS / CORDIC / Lookup Table)
+Rather than reading raw values, generate the beat signal using a **256-word quarter-sine ROM table** (already present in the HWA/DSP ROM, costing **0 bytes** of RAM) or a compact 32-bit phase accumulator:
+
+```c
+// Phase Accumulator for on-the-fly single-chirp synthesis
+// Generates: Target 1 (Adult at 0.8m) + Target 2 (Infant at 1.4m)
+void BIST_GenerateChirpSample(uint16_t n, int16_t *i_sample, int16_t *q_sample) {
+    // 32-bit Phase accumulators (cost: 8 bytes of stack)
+    uint32_t phase1 = n * PHI_STEP_TARGET1; // Target 1 beat frequency
+    uint32_t phase2 = n * PHI_STEP_TARGET2; // Target 2 beat frequency
+    
+    // Evaluate via HW trigonometric lookup table or C66x _sp_sin()
+    int32_t real = (A1 * cos_lut(phase1) + A2 * cos_lut(phase2)) >> 15;
+    int32_t imag = (A1 * sin_lut(phase1) + A2 * sin_lut(phase2)) >> 15;
+    
+    // Add deterministic pseudo-random dither (LFSR noise)
+    uint16_t noise = LFSR_Next() & 0x0F;
+    *i_sample = (int16_t)(real + noise);
+    *q_sample = (int16_t)(imag - noise);
+}
+```
+
+#### C. Linear Feedback Shift Register (LFSR) PRNG
+- For wideband noise floor and CFAR threshold testing, generate pseudorandom samples using a **32-bit Galois LFSR**:
+  $$x_{t+1} = (x_t \gg 1) \oplus (-(x_t \ \& \ 1) \ \& \ 0x80200003)$$
+- Memory overhead: **4 bytes** of static state (`uint32_t lfsr_state`), generating infinite deterministic repeatable sequences with zero storage.
+
+---
+
+### 6.3 Question 2: How to Generate Expected Data with Limited Memory?
+
+Storing large expected output arrays (e.g., 256 KB Range Profile or 128 KB 2D Doppler grid) is prohibited. Three mathematical techniques allow zero-to-negligible memory expected data verification:
+
+#### A. Closed-Form Analytical Output Prediction (Zero Stored Buffer)
+Because the injected radar target parameters ($R_i, v_i$) and FMCW chirp slope $S$ are known constants, the expected output bins are calculated directly using **closed-form integer arithmetic**:
+
+$$\text{Expected Peak Range Bin } k_i = \text{round}\left(\frac{2 \cdot S \cdot R_i \cdot N_{adc}}{c_0 \cdot F_s}\right)$$
+
+```c
+// Zero RAM overhead: Evaluate expected result analytically
+const uint16_t exp_k1 = (uint16_t)((2ULL * CHIRP_SLOPE * R1_MM * N_ADC) / (C0_MPS * FS_HZ)); // Bin 41
+const uint16_t exp_k2 = (uint16_t)((2ULL * CHIRP_SLOPE * R2_MM * N_ADC) / (C0_MPS * FS_HZ)); // Bin 72
+
+// Verify: Simply inspect HWA Peak Search Maximum Register or read 2 bins!
+if (hwa_max_peak_bin == exp_k1 && hwa_second_peak_bin == exp_k2) {
+    bist_status |= BIST_PEAK_EXACT_PASS;
+}
+```
+
+#### B. Rolling Polynomial CRC-32 Signature Compression (MISR)
+Instead of comparing $N$ output words, pass the output stream through the **hardware CRC engine** (built into the AWRL6844 DSS / EDMA hardware) or a Multiple Input Signature Register (MISR):
+- Input: 256 KB output stream.
+- Expected value: **Single 32-bit constant** stored in code flash (`const uint32_t GOLDEN_CRC = 0x7E3A91B4;`).
+- Memory required: **0 Bytes RAM** (computed entirely in registers).
+
+#### C. Running Statistical Accumulators (For SQNR Validation)
+Instead of buffering the entire FFT array to calculate:
+$$\text{SQNR} = 10 \log_{10}\left(\frac{\sum |X_{ref}|^2}{\sum |X_{ref} - X_{dut}|^2}\right)$$
+compute running scalar sums across the streaming output:
+- Accumulator 1: $E_{sig} = \sum_{k} |X_{dut}[k]|^2$ (64-bit int)
+- Accumulator 2: $E_{noise} = \sum_{k \notin \{k_1, k_2\}} |X_{dut}[k]|^2$ (64-bit int)
+- Memory required: **16 Bytes** on the DSP CPU register file (`uint64_t sum_sig, sum_noise`).
+
+---
+
+### 6.4 Question 3: What is the Absolute Minimum Memory Needed?
+
+Depending on the BIST architecture chosen, the minimum memory requirements break down as follows:
+
+| BIST Architecture Level | Target Validated | Scratchpad RAM Required | Flash/Code Overhead | Execution Time |
+| :--- | :--- | :--- | :--- | :--- |
+| **Level A: Single-Chirp FFT & Peak Verification (Recommended)** | HWA FFT butterfly units, window RAM, DC nulling, peak detector | **2.0 KB** *(1 KB ping input + 1 KB pong output)* | **< 300 Bytes** *(code + 2 constants)* | **~0.15 ms** |
+| **Level B: Streamed Doppler & CFAR Test** | 1D FFT + Slow-time 2D FFT + CFAR noise thresholding | **4.5 KB** *(1 KB input + 2 KB Doppler buffer + 1 KB CFAR window + 512 B stack)* | **< 800 Bytes** *(algorithmic LFSR + CRC table)* | **~1.2 ms** |
+| **Level C: Micro-Point Cloud & AoA Vector Test** | Full pipeline slice: ADC $\rightarrow$ FFT $\rightarrow$ CFAR $\rightarrow$ C66x AoA Phase | **8.0 KB** *(4 KB virtual ADC + 3 KB intermediate + 1 KB point cloud output)* | **< 1.5 KB** | **~2.4 ms** |
+| *Conventional Full Frame Buffer (Unoptimized)* | *Full 4-Rx 128-chirp radar cube* | *256 KB – 512 KB* | *256 KB Flash* | *15 – 25 ms* |
+
+#### Minimum Memory Budget (Level A Breakdown):
+- **Input Buffer (`HWA_PING_BUF`)**: $256 \times 4\text{ Bytes} = \mathbf{1,024\text{ Bytes}}$
+- **Output Buffer (`HWA_PONG_BUF`)**: $256 \times 4\text{ Bytes} = \mathbf{1,024\text{ Bytes}}$
+- **Stack & State Variables**:
+  - LFSR / phase accumulator state: **8 Bytes**
+  - Expected bins ($k_1, k_2$): **4 Bytes**
+  - Scalar SQNR accumulators: **16 Bytes**
+  - Golden CRC register: **4 Bytes**
+- **Total Absolute Minimum RAM**: **2,056 Bytes (~2 KB)**
+
+This fits comfortably inside the smallest internal RAM bank of the AWRL6844 (**16 KB `HWA_M0`** or **384 KB `DSS_L2`**) with over **99% of memory untouched and available** for safety runtime tasks.

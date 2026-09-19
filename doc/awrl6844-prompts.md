@@ -141,3 +141,63 @@ Functional Requirements:
 
 Write an end-to-end executable test suite demonstrating all 5 verification tiers passing.
 ```
+
+---
+
+## 🛠️ Prompt 6: Claude Prompt — Power-On BIST under Strict Memory & Hardware Constraints (AWRL6844)
+
+```text
+Role: You are a Principal Automotive Radar Embedded Systems & DSP Firmware Architect specializing in Texas Instruments mmWave radar SoCs (AWRL6844 / IWR6843 / AWR2944) and ISO 26262 ASIL-B functional safety.
+
+Objective:
+Design and implement a robust, production-grade Power-On Built-In Self-Test (BIST) firmware module for the AWRL6844 DSP Subsystem (DSS) and Hardware Accelerator (HWA 1.2).
+
+Critical Constraints:
+1. Strict Memory Budget:
+   - At cold power-on, the full 256 KB – 1.0 MB 3D Radar Cube (Stage 2) CANNOT be allocated in uninitialized DSS_L3 RAM.
+   - Storing a 256 KB pre-recorded raw ADC binary vector and 256 KB golden reference array in Flash/ROM is strictly prohibited (wastes scarce non-volatile program flash).
+   - The total scratchpad RAM allocated for BIST must be <= 2.5 KB (fitting into internal HWA M0 memory or DSS L2 local SRAM).
+2. Boot-Time Budget:
+   - The entire BIST suite must complete in < 5.0 ms before the AUTOSAR OS / FreeRTOS scheduler starts.
+
+Functional Implementation Requirements:
+
+A. Algorithmic On-the-Fly Test Data Generation (Zero-Flash, 1 KB RAM):
+   - Implement a streamed single-chirp test generator (256 complex 16-bit ADC samples = 1,024 Bytes).
+   - Do NOT read from pre-stored flash tables. Use a compact 32-bit Phase Accumulator Direct Digital Synthesis (DDS) algorithm utilizing on-chip C66x / HWA ROM trigonometric tables or a 32-bit Galois LFSR (polynomial: x^32 + x^31 + x^29 + x + 1).
+   - Synthesize two deterministic in-cabin radar targets:
+     * Target 1 (Adult occupant): R1 = 0.8m, v1 = +0.25 m/s, amplitude A1 = 18000
+     * Target 2 (Infant breathing): R2 = 1.4m, v2 = -0.15 m/s, amplitude A2 = 8500
+     * Add deterministic pseudorandom dither noise.
+
+B. Closed-Form Analytical Expected Value Generation (Zero-Flash, Zero-RAM):
+   - Compute the expected 1D Range FFT peak bins analytically using closed-form integer radar equations:
+     k_expected = round((2 * Chirp_Slope * Range * N_adc) / (c0 * Sampling_Rate))
+     Given: Chirp Slope S = 48 MHz/us, Fs = 7.5 Msps, Nadc = 256, c0 = 3e8 m/s.
+   - Pre-calculate and evaluate exact bins: k1 (Target 1) and k2 (Target 2) with zero pre-stored golden arrays.
+
+C. HWA 1.2 Fixed-Point Pipeline Execution (1 KB RAM):
+   - Configure a minimal HWA Paramset (Paramset 0) for Single-Chirp 1D Range FFT:
+     * Apply 256-point Hanning window multiplication.
+     * Enable hardware DC offset nulling.
+     * Execute 256-point Radix-2 24-bit fixed-point Complex FFT.
+     * Route output into a 1,024-byte Pong output buffer.
+
+D. Three-Tier Verification Engine:
+   - Tier 1: Peak Bin Exactness:
+     Query the HWA hardware peak search registers (or iterate through the 1 KB output) to verify that the primary peak matches k1 exactly (+-0 bins) and the secondary peak matches k2 (+-0 bins).
+   - Tier 2: Running Scalar SQNR Accumulator:
+     Calculate Signal-to-Quantization-Noise Ratio (SQNR) using two running 64-bit scalar accumulators (E_signal, E_noise) computed on-the-fly across the 256 output bins. Require SQNR >= 45.0 dB and peak magnitude error <= 1.0 dB. Zero intermediate array storage!
+   - Tier 3: Hardware MISR / CRC-32 Signature Compression:
+     Feed the 1 KB output stream through the DSS EDMA / CRC hardware engine. Verify that the final 32-bit CRC matches the expected golden polynomial scalar (0x7E3A91B4).
+
+E. Error Reporting & Fault Isolation:
+   - If any tier fails, set detailed error status bitfields (BIST_ERR_PEAK_MISMATCH, BIST_ERR_SQNR_DEGRADED, BIST_ERR_CRC_MISMATCH).
+   - Trigger the Error Signaling Module (ESM) Group 1 / Group 2 diagnostic notification and report through the simulated diagnostic interface.
+
+Deliverables:
+1. Clean, MISRA-C compliant C / C++ header and implementation file (e.g., `awrl6844_bist_dsp.h` and `awrl6844_bist_dsp.c`).
+2. Exact memory map breakdown verifying that total RAM usage <= 2,056 bytes.
+3. Standalone simulation / unit test runner demonstrating execution time, pass/fail status, and zero flash dependency.
+```
+

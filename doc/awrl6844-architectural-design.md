@@ -106,4 +106,6 @@ The following table summarizes the dataflow, word lengths, input/output data siz
 | **4** | **DSP Clustering & AoA** | TMS320C66x DSP Core | CFAR peaks + 4-channel Rx antenna phase vectors | **512 B** | Validated Occupants & 3D Point Cloud: $[X, Y, Z, V_r, \text{SNR}]$ + Tracks | **100 to 500 B** | `DSS_L2` & `APPSS_TCMA` (`0x00018000`) | Coordinate bounds: $\Delta R \le 0.05\text{ m}$, $\Delta\theta \le 2.0^\circ$, $\Delta v \le 0.03\text{ m/s}$ |
 | **5** | **Vehicle Gateway** | MCAN (CAN-FD) + ESM | Validated occupant classifications and diagnostics | **~64 B** | CAN-FD Frames (64-byte payload) & hardware `nERROR_OUT` pin | **64 to 128 B** | `APP_CANCFG` (`0x52000000`), `APP_SCI` | ISO 11898-1 bit compliance, valid CRC-16/32, `nERROR_OUT` inactive high |
 
+> **Memory Footprint Note**: **Stage 2 (2D Doppler FFT & Radar Cube)** represents the **peak memory bottleneck** across the entire pipeline (consuming **512 KB to 1,024 KB** in `DSS_L3` for simultaneous double-buffered 3D matrix transposition). This is why Power-On BIST architectures must avoid full-frame Stage 2 allocation and instead employ streamed single-chirp validation (Level A: 2.0 KB RAM).
+
 *For complete synthetic test vector formulas, memory topologies, and register offsets, refer to `dsp-pipeline-specification.md`.*
