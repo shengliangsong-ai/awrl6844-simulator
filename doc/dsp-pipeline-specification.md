@@ -8,28 +8,38 @@ This document provides a comprehensive register-level and dataflow specification
 
 The AWRL6844 signal processing pipeline converts continuous-wave Frequency-Modulated (FMCW) radar reflections into classified 3D occupant point clouds, micro-Doppler vital sign metrics, and ASIL-B vehicle telematics:
 
-```
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     STAGE 0     │       │     STAGE 1     │       │     STAGE 2     │
-│  Analog IF Rx   │ ────► │  1D Range FFT   │ ────► │  2D Doppler FFT │
-│  & ADC Sampling │       │  (Range Profile)│       │  (Radar Cube)   │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-         │                         │                         │
-         ▼                         ▼                         ▼
-   RF Frontend /             HWA 1.2 Engine           HWA 1.2 + EDMA
-   ACCEL_MEM (0x05100000)    M0-M3 RAM                DSS L3 RAM (0x88000000)
+```mermaid
+flowchart LR
+    subgraph HW0["RF & Digitization"]
+        S0["<b>Stage 0: Analog IF Rx</b><br/>ADC Sampling at 25 Msps<br/><i>Base: ACCEL_MEM (0x05100000)</i>"]
+    end
 
-                                   │
-                                   ▼
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     STAGE 5     │       │     STAGE 4     │       │     STAGE 3     │
-│ Vehicle CAN-FD  │ ◄──── │ DSP Clustering  │ ◄──── │ CFAR Detection  │
-│ & PMIC Telemetry│       │ & AoA Tracking  │       │ & Peak Extract  │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-         ▲                         ▲                         ▲
-         │                         │                         │
-    MCAN / UART               C66x DSP + R5F           HWA CFAR Engine
-    APP_CANCFG                DSS L2 / APP TCM         DSS L2 (0x80800000)
+    subgraph HW1["HWA 1.2 Accelerator Engine"]
+        S1["<b>Stage 1: 1D Range FFT</b><br/>Hanning Window & DC Null<br/><i>Memory: HWA M0-M3 RAM</i>"]
+        S2["<b>Stage 2: 2D Doppler FFT</b><br/>Radar Cube Slow-Time FFT<br/><i>Memory: DSS L3 (0x88000000)</i>"]
+        S3["<b>Stage 3: CFAR Detection</b><br/>Log-Mag & Peak Extract<br/><i>Memory: DSS L2 (0x80800000)</i>"]
+    end
+
+    subgraph HW2["DSP & ARM Subsystems"]
+        S4["<b>Stage 4: DSP Clustering & AoA</b><br/>C66x DSP + R5F Tracking<br/><i>Memory: DSS L2 / APP TCMA</i>"]
+        S5["<b>Stage 5: Vehicle Gateway</b><br/>CAN-FD & PMIC Telemetry<br/><i>Memory: APP_CANCFG (0x52000000)</i>"]
+    end
+
+    S0 -->|Raw ADC Samples<br/>256 KB| S1
+    S1 -->|1D Range Profile<br/>256 KB| S2
+    S2 -->|3D Radar Cube<br/>128/256 KB| S3
+    S3 -->|Candidate Peaks<br/>1 KB| S4
+    S4 -->|Occupant Tracks<br/>~500 B| S5
+
+    style HW0 fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style HW1 fill:#0f172a,stroke:#818cf8,stroke-width:1.5px,color:#f8fafc
+    style HW2 fill:#0f172a,stroke:#34d399,stroke-width:1.5px,color:#f8fafc
+    style S0 fill:#1e293b,stroke:#0284c7,stroke-width:1px,color:#e0f2fe
+    style S1 fill:#1e293b,stroke:#6366f1,stroke-width:1px,color:#e0e7ff
+    style S2 fill:#1e293b,stroke:#6366f1,stroke-width:1px,color:#e0e7ff
+    style S3 fill:#1e293b,stroke:#6366f1,stroke-width:1px,color:#e0e7ff
+    style S4 fill:#1e293b,stroke:#059669,stroke-width:1px,color:#d1fae5
+    style S5 fill:#1e293b,stroke:#059669,stroke-width:1px,color:#d1fae5
 ```
 
 ---
@@ -85,26 +95,51 @@ Pack the output as 16-bit signed integers ($Q15$ format) into a contiguous **256
 
 Due to fixed-point truncation and integer butterfly scaling in the HWA 1.2, floating-point equality (`==`) cannot be used. Apply the following multi-tier verification methods:
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Self-Test Verification Flow                     │
-│                                                                        │
-│   [Synthetic ADC Test Vector]                                          │
-│               │                                                        │
-│               ├──► HWA 1.2 / DSP Pipeline (DUT) ──► DUT Output Buffer  │
-│               │                                           │            │
-│               └──► Double-Precision Sim Model  ──► REF Output Buffer  │
-│                                                           │            │
-│                                   ▼                       ▼            │
-│                     ┌──────────────────────────────────────────────┐   │
-│                     │ 1. Peak Bin Matching (Range & Doppler ±0)    │   │
-│                     │ 2. Signal-to-Quantization-Noise (SQNR ≥45dB) │   │
-│                     │ 3. CFAR Confusion Matrix (0 FP, 0 FN)        │   │
-│                     │ 4. Golden CRC-32 Checksum Comparison         │   │
-│                     └──────────────────────────────────────────────┘   │
-│                                            │                           │
-│                                     [PASS / FAIL]                      │
-└────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    VEC["<b>Synthetic ADC Test Vector</b><br/>2 Targets (Adult & Infant) + Complex Noise (256 KB)"]
+
+    subgraph DUAL["Dual Execution Paths"]
+        DUT["<b>HWA 1.2 / DSP Pipeline (DUT)</b><br/>Fixed-point execution on silicon"]
+        REF["<b>Double-Precision Sim Model (REF)</b><br/>64-bit IEEE float mathematical reference"]
+    end
+
+    VEC -->|Direct DMA Injection| DUT
+    VEC -->|Simulation Input| REF
+
+    OUT_DUT["<b>DUT Output Buffers</b><br/>1D FFT, Radar Cube, Peaks"]
+    OUT_REF["<b>REF Output Buffers</b><br/>Golden Floating-Point Arrays"]
+
+    DUT --> OUT_DUT
+    REF --> OUT_REF
+
+    subgraph CHECKS["Multi-Tier Verification Engine"]
+        T1["<b>Tier 1: Peak Bin Exactness</b><br/>Range & Doppler Peak Error: ±0 bins"]
+        T2["<b>Tier 2: Quantization Quality</b><br/>SQNR ≥ 45 dB & Peak Error ≤ 1.0 dB"]
+        T3["<b>Tier 3: CFAR Confusion Matrix</b><br/>100% Detection (0 FP, 0 FN)"]
+        T4["<b>Tier 4: Coordinate Tolerance</b><br/>ΔR ≤ 0.05m, Δθ ≤ 2.0°, Δv ≤ 0.03 m/s"]
+        T5["<b>Tier 5: Golden CRC-32</b><br/>Exact 32-bit hardware hash match"]
+    end
+
+    OUT_DUT --> CHECKS
+    OUT_REF --> CHECKS
+
+    RESULT{"All Tiers Pass?"}
+    CHECKS --> RESULT
+    RESULT -->|Yes| PASS["<b>PASS</b><br/>Production / CI BIST Validated"]
+    RESULT -->|No| FAIL["<b>FAIL</b><br/>Log SQNR delta & Pinpoint Stage Fault"]
+
+    style VEC fill:#1e293b,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style DUT fill:#1e293b,stroke:#818cf8,stroke-width:1.5px,color:#f8fafc
+    style REF fill:#1e293b,stroke:#a78bfa,stroke-width:1.5px,color:#f8fafc
+    style CHECKS fill:#0f172a,stroke:#64748b,stroke-width:1.5px,color:#f8fafc
+    style T1 fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style T2 fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style T3 fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style T4 fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style T5 fill:#1e293b,stroke:#3b82f6,color:#e0f2fe
+    style PASS fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    style FAIL fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fee2e2
 ```
 
 1. **Peak Bin Index Exactness (Tier 1)**:

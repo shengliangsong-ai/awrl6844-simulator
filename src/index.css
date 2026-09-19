@@ -1,2 +1,19 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+/* KaTeX formula readability in dark theme and table cells */
+.katex {
+  font-size: 1.05em;
+  color: #e2e8f0;
+}
+
+.katex-display {
+  margin: 0.75em 0 !important;
+  padding: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex-html {
+  white-space: nowrap;
+}

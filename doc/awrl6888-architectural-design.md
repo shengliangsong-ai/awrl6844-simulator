@@ -6,30 +6,52 @@ This design specifications document outlines a **register-level and API-level be
 
 ### 1. Architectural Diagram: 8x8 Scaled Simulator Topology
 
-```
-                      +-------------------------------------------------+
-                      |             AWRL6888 SIMULATOR CORE             |
-                      +------------------------+------------------------+
-                                               |
-         +-------------------------------------+---------------------------------+
-         |                                                                       |
-+--------v--------------------------------+                             +--------v--------------------------------+
-|      VIRTUAL MMU & MEMORY MANAGER       |                             |     8T8R TRANSCEIVER CO-PROCESSOR       |
-+-----------------------------------------+                             +-----------------------------------------+
-| - APP R5F TCM (768 KB)                  |                             | - 8-Bit Rx Channel Mask (0xFF / 255)    |
-| - DSS C66x L2 Cache (384 KB)            |                             | - 8-Bit Tx Channel Mask (0xFF / 255)    |
-| - DSS L3 Native RAM (512 KB)            |                             | - 64 Virtual Channel MIMO Radar Cube    |
-| - DSS L3 Shared Dynamic Banks (896 KB)  |                             | - Scaled 8-Channel Virtual ADC Buffers  |
-+-----------------------------------------+                             +-----------------------------------------+
-                                               |
-                                               |
-                                  +------------v------------+
-                                  |   HWA 1.2 MIMO ENGINE   |
-                                  +-------------------------+
-                                  | - 24-Bit I/Q FFTs       |
-                                  | - CFAR-OS (32-Sided)    |
-                                  | - Radar Cube Compressor |
-                                  +-------------------------+
+```mermaid
+flowchart TD
+    CORE["<b>AWRL6888 SIMULATOR CORE</b><br/>Event Bus & Multi-Core Arbitration"]
+
+    subgraph MMU["VIRTUAL MMU & MEMORY MANAGER"]
+        M1["<b>APP R5F TCMA</b><br/>0x00018000 (512 KB)"]
+        M2["<b>APP R5F TCMB</b><br/>0x08000000 (256 KB)"]
+        M3["<b>DSS C66x L2</b><br/>0x80800000 (384 KB)"]
+        M4["<b>DSS L3 Native RAM</b><br/>0x88000000 (1.4 MB Expanded)"]
+        M5["<b>External Flash</b><br/>0x70000000 (32 MB)"]
+    end
+
+    subgraph TRANSCEIVER["8T8R TRANSCEIVER CO-PROCESSOR"]
+        T1["<b>8-Bit Rx Channel Mask</b><br/>0xFF / 255 (RX1 to RX8)"]
+        T2["<b>8-Bit Tx Channel Mask</b><br/>0xFF / 255 (TX1 to TX8)"]
+        T3["<b>64 Virtual Channel Grid</b><br/>8 TX × 8 RX MIMO Array"]
+        T4["<b>Scaled ADC Buffers</b><br/>DSS_ADCBUF (0x83000000)"]
+    end
+
+    subgraph HWA["HWA 1.2 ACCELERATOR & DSP"]
+        H1["<b>24-Bit Range/Doppler FFTs</b><br/>Integer Butterfly Scaling"]
+        H2["<b>CFAR-CA / CFAR-OS Engine</b><br/>Log-Magnitude Noise Windows"]
+        H3["<b>3D Occupant Point Cloud</b><br/>Azimuth + Elevation Resolution"]
+    end
+
+    CORE --> MMU
+    CORE --> TRANSCEIVER
+    TRANSCEIVER --> HWA
+    MMU --> HWA
+
+    style CORE fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc
+    style MMU fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style TRANSCEIVER fill:#0f172a,stroke:#f59e0b,stroke-width:1.5px,color:#f8fafc
+    style HWA fill:#0f172a,stroke:#10b981,stroke-width:1.5px,color:#f8fafc
+    style M1 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M2 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M3 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M4 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M5 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style T1 fill:#1e293b,stroke:#d97706,color:#fef3c7
+    style T2 fill:#1e293b,stroke:#d97706,color:#fef3c7
+    style T3 fill:#1e293b,stroke:#d97706,color:#fef3c7
+    style T4 fill:#1e293b,stroke:#d97706,color:#fef3c7
+    style H1 fill:#1e293b,stroke:#059669,color:#d1fae5
+    style H2 fill:#1e293b,stroke:#059669,color:#d1fae5
+    style H3 fill:#1e293b,stroke:#059669,color:#d1fae5
 ```
 
 ---

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Book, X, ChevronRight, FileText, Search } from 'lucide-react';
+import { MermaidDiagram } from './MermaidDiagram';
 
 const docsModules = import.meta.glob(['/doc/*.md', '/docs/*.md'], { query: '?raw', import: 'default' }) as Record<string, () => Promise<string>>;
 
@@ -145,7 +148,29 @@ export const DocViewer: React.FC<{ onClose: () => void; initialDoc?: string }> =
                 prose-td:border-slate-800/80 
                 prose-td:p-2.5 
                 prose-td:text-slate-300">
-                <Markdown remarkPlugins={[remarkGfm]}>{docs[activeDoc]}</Markdown>
+                <Markdown 
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    code({ className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const lang = match ? match[1] : '';
+                      const codeString = String(children).replace(/\n$/, '');
+
+                      if (lang === 'mermaid') {
+                        return <MermaidDiagram chart={codeString} />;
+                      }
+
+                      return (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {docs[activeDoc]}
+                </Markdown>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-slate-500">

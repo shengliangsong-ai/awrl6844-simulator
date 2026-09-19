@@ -23,21 +23,22 @@ The following computational cores and engines **do not** execute binary instruct
 *   **The TI C66x DSP (DSS) Core:** 
     *   *Reality:* This is a major blocker for true emulation. The C66x is a highly proprietary, 8-way Very Long Instruction Word (VLIW) vector mathematics processor operating at 450 MHz. There is no open-source QEMU target or backend available for the TI C66x instruction set.
     *   *Simulator Implementation:* DSP-side interactions are triggered procedurally.
-*   **The Hardware Accelerator (HWA 1.2):** 
-    *   *Reality:* Running actual binary code that interacts with the HWA would require writing a custom emulator block to model the 32 parameter sets and state transitions of the 200 MHz accelerator engine.
-    *   *Simulator Implementation:* We mock the *memory layout* of the 64-channel radar cube inside L3 RAM, but we do not execute the FFT or CFAR-OS mathematical processing of the ADC samples.
+*   **The Hardware Accelerator (HWA 1.2) & DSP Processing Chain:** 
+    *   *Reality:* Running actual machine binary instructions (`.out` or `.bin`) compiled for TI C66x VLIW or raw HWA parameter RAM state machines instruction-by-instruction requires proprietary hardware cycle-accurate emulators.
+    *   *Simulator Implementation:* Fully implemented at the **algorithmic and signal processing level** in `DSPPipelineSim.tsx` and `src/lib/dsp.ts`. The simulator executes Radix-2 Cooley-Tukey 1D Range FFTs with Hanning windowing, 2D Doppler slow-time FFTs, Cell-Averaging CFAR (CFAR-CA) 2D peak detection, and 3D spatial occupant clustering mapped directly to a 3D in-cabin vehicle visualization.
 *   **FECSS (Cortex-M3 Front-End):** 
-    *   *Reality:* Executes closed-source TI firmware to perform analog baseband control. Running production binaries means emulating the CM3 core and having access to TI's proprietary ROM images.
-    *   *Simulator Implementation:* High-level abstraction; radar chirps and ADC buffer fills are mocked procedurally.
+    *   *Reality:* Executes closed-source TI firmware to perform analog RF baseband tuning and chirp PLL sequencing. Running production binaries requires proprietary ROM images.
+    *   *Simulator Implementation:* High-level mathematical FMCW model; radar chirps, beat frequencies, Doppler phase progression, and antenna spatial phase shifts are synthesized directly from configurable in-cabin occupant configurations (adults/infants in FL, FR, BL, BR seats).
 
 ## 3. Summary of Use Cases
 
-**Recommended Workflows:**
-*   Validating memory map layouts and boundary constraints.
-*   Testing EDMA configuration parameters (PaRAM sets).
-*   Checking register-level control flows (e.g., Power/Deep Sleep sequencing, Transceiver MIMO configurations).
-*   Mocking user interfaces and dashboards that consume SoC data.
+**Supported & Validated Workflows:**
+*   **DSP Signal Processing Pipeline Simulation**: Interactive end-to-end execution of 1D Range FFT, 2D Doppler FFT, 2D CFAR-CA detection, 3D point cloud generation, and in-cabin seat clustering.
+*   **Mathematical & Algorithmic Validation**: Verification of SQNR ($\ge 45\text{ dB}$), peak bin exactness, and CFAR confusion matrices.
+*   **Virtual Memory Map (vMMU) Layouts**: Strict bounds validation, read/write trapping, and hex inspection across APP R5F TCMA/B, DSS L2, DSS L3, and external flash.
+*   **EDMA PaRAM Validation**: Bounds checking and automated memory copying for 32-byte PaRAM structures.
+*   **Register State Flow**: Interactive bitmask toggling and register-write side effects across TOP_PRCM, Mailbox IPC, and APP_CTRL 8T8R transceiver masks.
+*   **Hardware Trace & Diagnostics**: Live register compare/diffing, memory binary hex loading/dumping, and offline PWA capability.
 
 **Unsupported Workflows:**
-*   Executing compiled `.out` or `.bin` ARM/DSP firmware files instruction-by-instruction.
-*   Testing mathematically accurate radar signal processing (FFT/CFAR algorithms).
+*   Executing compiled `.out` or `.bin` ARM/DSP firmware machine instructions directly at the CPU op-code execution level (Instruction Set Simulation / ISS).

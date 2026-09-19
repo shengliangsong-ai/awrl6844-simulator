@@ -105,3 +105,39 @@ Behavioral Logic:
 
 Deliver a fully realized Python implementation of this power control FSM.
 ```
+
+---
+
+## 🛠️ Prompt 5: Detailed Task Prompt — HWA 1.2 & C66x DSP Pipeline Verification
+
+```text
+Task: Implement the algorithmic radar signal processing chain and 5-tier acceptance self-test verification engine for the AWRL6844 HWA 1.2 and C66x DSP.
+
+Context:
+Ground your implementation in the "AWRL6844 mmWave Radar DSP & Hardware Accelerator Pipeline Specification". Follow the exact 6-stage dataflow from raw ADC samples to vehicle CAN-FD frames.
+
+Functional Requirements:
+1. Stage 0: 256 KB Synthetic ADC Test Vector Generator:
+   - Synthesize a deterministic frame: 4 Rx antennas, 128 chirps, 256 ADC samples (16-bit complex words).
+   - Inject Target 1 (Adult at 0.8m, +0.25 m/s, -25°) and Target 2 (Infant at 1.4m, -0.15 m/s, +20°) with AWGN.
+2. Stage 1: 1D Range FFT:
+   - Apply 256-point Hanning window and DC offset nulling.
+   - Execute fixed-point 1D FFT and pack into 256 KB Range Profile buffer.
+3. Stage 2: 2D Doppler FFT:
+   - Execute slow-time FFT across chirps with Doppler centering shift.
+   - Accumulate into a 128 KB Log-Magnitude Range-Doppler heatmap.
+4. Stage 3: 2D CFAR-CA Peak Detection:
+   - Implement Cell-Averaging CFAR with configurable training/guard cells and dynamic thresholding.
+   - Extract candidate peak structures: range_idx, doppler_idx, peak_power_db, noise_floor_db.
+5. Stage 4 & 5: AoA, Spatial Clustering & Vehicle Telematics:
+   - Calculate azimuth Angle-of-Arrival (AoA) across Rx antennas and cluster into 4 vehicle seating zones (FL, FR, BL, BR).
+   - Format detected occupancy and infant presence into CAN-FD telemetry frames.
+6. 5-Tier Self-Test Acceptance Engine:
+   - Tier 1: Peak bin exactness (±0 bins).
+   - Tier 2: SQNR ≥ 45 dB and peak magnitude error ≤ 1.0 dB against 64-bit IEEE float model.
+   - Tier 3: CFAR confusion matrix (TP=2, FP=0, FN=0).
+   - Tier 4: Spatial coordinates tolerance (|ΔR| ≤ 0.05m, |Δθ| ≤ 2.0°, |Δv| ≤ 0.03 m/s).
+   - Tier 5: Hardware regression Golden CRC-32 checksum matching.
+
+Write an end-to-end executable test suite demonstrating all 5 verification tiers passing.
+```

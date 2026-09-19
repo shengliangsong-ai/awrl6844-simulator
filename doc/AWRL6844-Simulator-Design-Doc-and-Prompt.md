@@ -197,20 +197,40 @@ The translation layer traps writes to shared memory configurations to dynamicall
 
 ## 2. Core Mock State Machine Implementations
 
-```
-                  ┌────────────────────────────────────────────────────────┐
-                  │                 SIMULATOR CORE ENGINE                  │
-                  └─────────┬────────────────────────────────────┬─────────┘
-                            │                                    │
-    ┌───────────────────────▼──────────────────────┐    ┌────────▼─────────────────────────┐
-    │          VIRTUAL MMU & MEMORY MAP            │    │       REGISTER STATE ENGINE      │
-    ├──────────────────────────────────────────────┤    ├──────────────────────────────────┤
-    │  • APP R5F TCM-A: 0x00018000 (512 KB)        │    │  • TOP_PRCM Control (0x5A040000) │
-    │  • APP R5F TCM-B: 0x08000000 (256 KB)        │    │  • Mailbox IPC (0x44000000)      │
-    │  • DSS C66x L2:   0x80800000 (384 KB)        │    │  • APP_CTRL Boot Info Registers  │
-    │  • DSS L3 Native: 0x88000000 (512 KB)        │    │  • APP_RCM Registers             │
-    │  • DSS L3 Shared: Dynamic App/DSP Layout     │    │  • ESM Severity Diagnostics      │
-    └──────────────────────────────────────────────┘    └──────────────────────────────────┘
+```mermaid
+flowchart TD
+    CORE["<b>SIMULATOR CORE ENGINE</b><br/>Multi-Core Event Loop & Inter-Module Bus"]
+
+    subgraph MMU["VIRTUAL MMU & MEMORY MAP"]
+        M1["<b>APP R5F TCM-A</b><br/>0x00018000 (512 KB)"]
+        M2["<b>APP R5F TCM-B</b><br/>0x08000000 (256 KB)"]
+        M3["<b>DSS C66x L2</b><br/>0x80800000 (384 KB)"]
+        M4["<b>DSS L3 Native</b><br/>0x88000000 (512 KB)"]
+        M5["<b>DSS L3 Shared</b><br/>Dynamic Bank Allocation"]
+    end
+
+    subgraph REG["REGISTER STATE ENGINE"]
+        R1["<b>TOP_PRCM Control</b><br/>Base: 0x5A040000"]
+        R2["<b>Mailbox IPC</b><br/>Base: 0x44000000"]
+        R3["<b>APP_CTRL Boot Info</b><br/>Status & RCM registers"]
+        R4["<b>ESM Diagnostics</b><br/>Severity levels & nERROR_OUT"]
+    end
+
+    CORE --> MMU
+    CORE --> REG
+
+    style CORE fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc
+    style MMU fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style REG fill:#0f172a,stroke:#34d399,stroke-width:1.5px,color:#f8fafc
+    style M1 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M2 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M3 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M4 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style M5 fill:#1e293b,stroke:#0284c7,color:#e0f2fe
+    style R1 fill:#1e293b,stroke:#059669,color:#d1fae5
+    style R2 fill:#1e293b,stroke:#059669,color:#d1fae5
+    style R3 fill:#1e293b,stroke:#059669,color:#d1fae5
+    style R4 fill:#1e293b,stroke:#059669,color:#d1fae5
 ```
 
 ### A. Hardware Mailbox IPC (Base Address: `0x44000000`)
