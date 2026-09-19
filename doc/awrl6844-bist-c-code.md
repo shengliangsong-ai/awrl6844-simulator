@@ -41,6 +41,7 @@ Because both the simulation and the hardware board execute the exact same algori
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
