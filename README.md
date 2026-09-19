@@ -118,8 +118,14 @@ You can run the embedded C BIST verification simulator natively on your host mac
 # Compile the BIST simulation binary
 make
 
-# Execute the self-test verification suite
+# Execute the full self-test verification suite (Stages 0..4)
 make run
+
+# Run with full input/output debug trace logs per stage
+make run-trace
+
+# Run test across incremental stage configurations
+make run-stages
 
 # Inspect memory sections (.text, .data, .bss)
 make info
@@ -128,32 +134,55 @@ make info
 make clean
 ```
 
+#### Granular Stage Testing & Debug Trace Options:
+You can test individual stages or combinations of the 5-stage DSP pipeline directly from the command line:
+
+```bash
+# Run specific stages using comma-separated list:
+./bist_sim stage=0,1                # Run Stage 0 (ADC Gen) and Stage 1 (1D FFT)
+./bist_sim stage=0,1,2,3,4          # Run all 5 stages
+
+# Run specific stages using hexadecimal bitmask:
+./bist_sim stage_mask=0x3           # Stages 0, 1 (Bit 0 + Bit 1)
+./bist_sim stage_mask=0x7           # Stages 0, 1, 2 (ADC + FFT + Doppler)
+./bist_sim stage_mask=0xF           # Stages 0, 1, 2, 3 (Up to CFAR)
+./bist_sim stage_mask=0x1F          # Stages 0, 1, 2, 3, 4 (Full pipeline)
+
+# Enable verbose input/output debug trace logging for any stage run:
+./bist_sim stage=0,1 --trace
+./bist_sim stage_mask=0x1F --trace
+```
+
 #### Expected Terminal Output:
 ```text
 ======================================================================
  TI AWRL6844 Power-On BIST DSP & HWA Verification Simulator
- ISO 26262 ASIL-B Strict Memory Self-Test Runner
+ Standard: ISO 26262 ASIL-B Safety Compliance
+ Active Stage Mask: 0x1F (Stages Tested: 0 1 2 3 4 )
 ======================================================================
 
-[1/3] Memory Architecture Verification:
-  - Ping ADC Input Buffer:      1024 Bytes (256 samples x 4 B)
-  - Pong FFT Output Buffer:     1024 Bytes (256 bins x 4 B)
-  - Total BIST RAM Footprint:   2048 Bytes (2.00 KB / Max Limit: 2.5 KB) -> PASS
+[STAGE 0] Raw ADC Sampling & In-Cabin Synthesis...
+  - Buffer Allocation: 1024 Bytes (Ping)
+  - CRC-32 Signature:  0x9AD30C85 (Expected: 0x9AD30C85) -> [PASS]
 
-[2/3] Executing Golden Signature Profiling Pass...
-  - Computed Golden Hardware CRC-32: 0x7E3A91B4
+[STAGE 1] 1D Range FFT (HWA 1.2 Fixed-Point Emulation)...
+  - Peak 1 (Adult 0.8m):   Bin 20 (Expected 20) -> [PASS]
+  - Peak 2 (Infant 1.4m):  Bin 36 (Expected 36) -> [PASS]
+  - Pipeline SQNR:         54.64 dB (Limit >= 45.0 dB) -> [PASS]
+  - CRC-32 Signature:      0x91332940 (Expected: 0x91332940) -> [PASS]
 
-[3/3] Executing Production Power-On BIST Verification...
-  ------------------------------------------------------------------
-  TEST METRIC                EXPECTED         MEASURED         STATUS
-  ------------------------------------------------------------------
-  Target 1 (Adult 0.8m)      Bin 20           Bin 20           [PASS]
-  Target 2 (Infant 1.4m)     Bin 36           Bin 36           [PASS]
-  Pipeline SQNR (dB)         >= 45.00 dB      49.82 dB         [PASS]
-  Hardware CRC-32 Checksum   0x7E3A91B4       0x7E3A91B4       [PASS]
-  ------------------------------------------------------------------
+[STAGE 2] 2D Doppler FFT & Velocity Slicing...
+  - Target 1 Doppler Bin:  9 (v = +0.25 m/s) -> [PASS]
+  - Target 2 Doppler Bin:  6 (v = -0.15 m/s) -> [PASS]
 
->>> OVERALL BIST STATUS: PASSED (System ASIL-B Safe to Boot) <<<
+[STAGE 3] CFAR-CA Peak Detection & Thresholding...
+  - Total Validated Peaks: 2 (Expected: 2) -> [PASS]
+
+[STAGE 4] AoA & DBSCAN Occupant Clustering...
+  - Assigned Vehicle Seats: [FL, BR] (Expected: [FL, BR]) -> [PASS]
+
+----------------------------------------------------------------------
+>>> BIST TEST SUITE RESULT: ALL ACTIVE STAGES PASSED (0x1F) <<<
 ```
 
 ---
