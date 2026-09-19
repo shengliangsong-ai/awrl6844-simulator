@@ -13,13 +13,16 @@
  *     ./bist_sim stage_mask=0x7   (Stages 0, 1, 2)
  *     ./bist_sim stage_mask=0xF   (Stages 0, 1, 2, 3)
  *     ./bist_sim stage_mask=0x1F  (Stages 0, 1, 2, 3, 4)
- * - Debug trace logging flag (--trace or trace=1) to dump input/output per stage
- * - Output log files per stage saved to disk:
- *     stage0_adc_trace.log
- *     stage1_fft_trace.log
- *     stage2_doppler_trace.log
- *     stage3_cfar_trace.log
- *     stage4_clustering_trace.log
+ * - Debug trace logging flag (--trace or trace=1) to dump human-readable logs:
+ *     stage0_adc_trace.log, stage1_fft_trace.log, stage2_doppler_trace.log,
+ *     stage3_cfar_trace.log, stage4_clustering_trace.log
+ * - Compact binary QSPI flash dump flags (--bin, --bin-dump, or bin=1):
+ *     stage0_adc_in.bin       (1,024 Bytes - Exact raw ADC Q15 input payload)
+ *     stage1_fft_out.bin      (1,024 Bytes - Range FFT Q15 output payload)
+ *     stage2_doppler_out.bin  (16 Bytes - Doppler velocity payload)
+ *     stage3_cfar_out.bin     (16 Bytes - Detected target range/Doppler bin payload)
+ *     stage4_clusters_out.bin (48 Bytes - 3D occupant spatial cluster payload)
+ *     awrl6844_bist_qspi_dump.bin (Combined QSPI flash image with header & stage table)
  * =====================================================================================
  */
 
@@ -92,6 +95,65 @@ typedef struct {
 } OccupantCluster;
 
 /* -----------------------------------------------------------------------------------
+ * Compact Binary Flash Structures (Minimum storage in QSPI Flash)
+ * ----------------------------------------------------------------------------------- */
+#define BIST_FLASH_MAGIC        0x4C525741U /* "AWRL" in Little Endian */
+#define BIST_FLASH_VERSION      0x00010002U /* v1.2 */
+
+#pragma pack(push, 1)
+typedef struct {
+    uint32_t magic;             /* 0x4C525741 ('AWRL') */
+    uint32_t version;           /* Format version 0x00010002 */
+    uint32_t stage_mask;        /* Mask of stages dumped (0x1F) */
+    uint32_t total_image_size;  /* Total binary size in flash */
+    uint32_t header_crc32;      /* CRC-32 of previous 16 bytes */
+} BistFlashMasterHeader;
+
+typedef struct {
+    uint16_t stage_id;          /* 0, 1, 2, 3, 4 */
+    uint16_t reserved;          /* Alignment */
+    uint32_t payload_offset;    /* Byte offset from flash image base */
+    uint32_t payload_size;      /* Payload size in bytes */
+    uint32_t payload_crc32;     /* CRC-32 of this stage's payload */
+} BistFlashStageEntry;
+
+/* Compact Stage 2 Binary Struct: 16 Bytes */
+typedef struct {
+    uint16_t p1_doppler_bin;
+    uint16_t p2_doppler_bin;
+    int16_t  p1_velocity_q8;    /* Fixed-point Q8: velocity * 256 (+0.25 -> 64) */
+    int16_t  p2_velocity_q8;    /* Fixed-point Q8: velocity * 256 (-0.15 -> -38) */
+    uint32_t reserved1;
+    uint32_t reserved2;
+} BistStage2Bin;
+
+/* Compact Stage 3 Binary Struct: 16 Bytes */
+typedef struct {
+    uint16_t num_peaks;
+    uint16_t reserved;
+    CfarPeakRecord peaks[2];    /* 8 bytes each = 16 bytes */
+} BistStage3Bin;
+
+/* Compact Stage 4 Binary Struct: 2 clusters x 24 bytes = 48 Bytes */
+typedef struct {
+    int16_t x_mm;               /* mm: x * 1000 */
+    int16_t y_mm;               /* mm: y * 1000 */
+    int16_t z_mm;               /* mm: z * 1000 */
+    int16_t vel_q8;             /* velocity * 256 */
+    int16_t snr_q8;             /* snr * 256 */
+    char    seat[4];            /* "FL\0\0" */
+    uint16_t flags;
+    uint32_t reserved;
+} BistClusterBin;
+
+typedef struct {
+    uint16_t num_clusters;
+    uint16_t reserved;
+    BistClusterBin clusters[2]; /* 24 * 2 = 48 bytes */
+} BistStage4Bin;
+#pragma pack(pop)
+
+/* -----------------------------------------------------------------------------------
  * Fixed Memory Allocations (Total RAM <= 2,048 Bytes)
  * ----------------------------------------------------------------------------------- */
 static Complex16 g_bist_ping_adc_buf[BIST_ADC_SAMPLES]; /* 1,024 Bytes: Input ADC */
@@ -147,7 +209,7 @@ uint16_t BIST_CalculateExpectedPeakBin(float range_meters) {
 /* ===================================================================================
  * STAGE 0: Algorithmic Single-Chirp ADC Buffer Generation
  * =================================================================================== */
-void BIST_Stage0_GenerateADC(Complex16 *ping_buf, bool trace) {
+void BIST_Stage0_GenerateADC(Complex16 *ping_buf, bool trace, bool bin_dump) {
     BIST_LFSR_Reset(); /* Deterministic repeatable test vector */
     float f1 = (TARGET1_RANGE_M / RADAR_MAX_RANGE_M) * (BIST_ADC_SAMPLES / 2.0f);
     float f2 = (TARGET2_RANGE_M / RADAR_MAX_RANGE_M) * (BIST_ADC_SAMPLES / 2.0f);
@@ -170,6 +232,15 @@ void BIST_Stage0_GenerateADC(Complex16 *ping_buf, bool trace) {
     }
 
     uint32_t adc_crc = BIST_ComputeBufferCRC32((const uint8_t*)ping_buf, BIST_PING_BUFFER_SIZE);
+
+    if (bin_dump) {
+        FILE *bfp = fopen("stage0_adc_in.bin", "wb");
+        if (bfp != NULL) {
+            fwrite(ping_buf, 1, BIST_PING_BUFFER_SIZE, bfp);
+            fclose(bfp);
+            printf("  [BIN DUMP] Saved Stage 0 compact input (1024 B) -> stage0_adc_in.bin\n");
+        }
+    }
 
     if (trace) {
         printf("\n[DEBUG TRACE] === STAGE 0: ADC Input Generation Dump ===\n");
@@ -217,7 +288,7 @@ void BIST_Stage0_GenerateADC(Complex16 *ping_buf, bool trace) {
 /* ===================================================================================
  * STAGE 1: 1D Range FFT (Hanning Window + Bit-Reversal + Cooley-Tukey Radix-2)
  * =================================================================================== */
-void BIST_Stage1_ExecuteRangeFFT(const Complex16 *in_buf, Complex16 *out_buf, bool trace) {
+void BIST_Stage1_ExecuteRangeFFT(const Complex16 *in_buf, Complex16 *out_buf, bool trace, bool bin_dump) {
     /* Step 1: Hanning window multiplication */
     for (uint16_t i = 0; i < BIST_ADC_SAMPLES; i++) {
         float w = 0.5f * (1.0f - cosf((float)(2.0 * M_PI * i / (BIST_ADC_SAMPLES - 1))));
@@ -278,6 +349,15 @@ void BIST_Stage1_ExecuteRangeFFT(const Complex16 *in_buf, Complex16 *out_buf, bo
     }
 
     uint32_t fft_crc = BIST_ComputeBufferCRC32((const uint8_t*)out_buf, BIST_PONG_BUFFER_SIZE);
+
+    if (bin_dump) {
+        FILE *bfp = fopen("stage1_fft_out.bin", "wb");
+        if (bfp != NULL) {
+            fwrite(out_buf, 1, BIST_PONG_BUFFER_SIZE, bfp);
+            fclose(bfp);
+            printf("  [BIN DUMP] Saved Stage 1 compact FFT output (1024 B) -> stage1_fft_out.bin\n");
+        }
+    }
 
     if (trace) {
         printf("\n[DEBUG TRACE] === STAGE 1: 1D Range FFT Dump ===\n");
@@ -342,7 +422,7 @@ typedef struct {
     float    peak2_vel_mps;
 } Stage2_DopplerResult;
 
-Stage2_DopplerResult BIST_Stage2_ExecuteDoppler(const Complex16 *range_buf, bool trace) {
+Stage2_DopplerResult BIST_Stage2_ExecuteDoppler(const Complex16 *range_buf, bool trace, bool bin_dump) {
     Stage2_DopplerResult res;
     (void)range_buf;
     /* Analytical expected Doppler bin centered in [0, BIST_DOPPLER_BINS-1] */
@@ -352,6 +432,22 @@ Stage2_DopplerResult BIST_Stage2_ExecuteDoppler(const Complex16 *range_buf, bool
     res.peak2_doppler_bin = 6;
     res.peak1_vel_mps = TARGET1_VEL_MPS;
     res.peak2_vel_mps = TARGET2_VEL_MPS;
+
+    if (bin_dump) {
+        BistStage2Bin b2;
+        memset(&b2, 0, sizeof(b2));
+        b2.p1_doppler_bin = res.peak1_doppler_bin;
+        b2.p2_doppler_bin = res.peak2_doppler_bin;
+        b2.p1_velocity_q8 = (int16_t)(res.peak1_vel_mps * 256.0f);
+        b2.p2_velocity_q8 = (int16_t)(res.peak2_vel_mps * 256.0f);
+
+        FILE *bfp = fopen("stage2_doppler_out.bin", "wb");
+        if (bfp != NULL) {
+            fwrite(&b2, 1, sizeof(b2), bfp);
+            fclose(bfp);
+            printf("  [BIN DUMP] Saved Stage 2 compact Doppler output (%u B) -> stage2_doppler_out.bin\n", (unsigned int)sizeof(b2));
+        }
+    }
 
     if (trace) {
         printf("\n[DEBUG TRACE] === STAGE 2: 2D Doppler FFT Dump ===\n");
@@ -399,7 +495,7 @@ Stage2_DopplerResult BIST_Stage2_ExecuteDoppler(const Complex16 *range_buf, bool
 /* ===================================================================================
  * STAGE 3: CFAR-CA Detection & Candidate Peak Extraction
  * =================================================================================== */
-int BIST_Stage3_ExecuteCFAR(const Complex16 *fft_buf, CfarPeakRecord *peaks, bool trace) {
+int BIST_Stage3_ExecuteCFAR(const Complex16 *fft_buf, CfarPeakRecord *peaks, bool trace, bool bin_dump) {
     int num_peaks = 0;
 
     /* Search Range profile for local maxima exceeding local noise by threshold */
@@ -434,6 +530,21 @@ int BIST_Stage3_ExecuteCFAR(const Complex16 *fft_buf, CfarPeakRecord *peaks, boo
                 peaks[num_peaks].noise_floor_db = (int16_t)(10.0f * log10f((float)(avg_noise + 1)));
                 num_peaks++;
             }
+        }
+    }
+
+    if (bin_dump) {
+        BistStage3Bin b3;
+        memset(&b3, 0, sizeof(b3));
+        b3.num_peaks = (uint16_t)num_peaks;
+        for (int i = 0; i < num_peaks && i < 2; i++) {
+            b3.peaks[i] = peaks[i];
+        }
+        FILE *bfp = fopen("stage3_cfar_out.bin", "wb");
+        if (bfp != NULL) {
+            fwrite(&b3, 1, sizeof(b3), bfp);
+            fclose(bfp);
+            printf("  [BIN DUMP] Saved Stage 3 compact CFAR output (%u B) -> stage3_cfar_out.bin\n", (unsigned int)sizeof(b3));
         }
     }
 
@@ -480,7 +591,7 @@ int BIST_Stage3_ExecuteCFAR(const Complex16 *fft_buf, CfarPeakRecord *peaks, boo
 /* ===================================================================================
  * STAGE 4: Angle-of-Arrival (AoA) & DBSCAN Occupant Clustering
  * =================================================================================== */
-int BIST_Stage4_ExecuteClustering(const CfarPeakRecord *peaks, int num_peaks, OccupantCluster *clusters, bool trace) {
+int BIST_Stage4_ExecuteClustering(const CfarPeakRecord *peaks, int num_peaks, OccupantCluster *clusters, bool trace, bool bin_dump) {
     int num_clusters = 0;
     for (int i = 0; i < num_peaks; i++) {
         float r_m = (peaks[i].range_bin / 128.0f) * RADAR_MAX_RANGE_M;
@@ -500,6 +611,27 @@ int BIST_Stage4_ExecuteClustering(const CfarPeakRecord *peaks, int num_peaks, Oc
             strcpy(clusters[num_clusters].assigned_seat, (clusters[num_clusters].x_m < 0) ? "BL" : "BR");
         }
         num_clusters++;
+    }
+
+    if (bin_dump) {
+        BistStage4Bin b4;
+        memset(&b4, 0, sizeof(b4));
+        b4.num_clusters = (uint16_t)num_clusters;
+        for (int c = 0; c < num_clusters && c < 2; c++) {
+            b4.clusters[c].x_mm = (int16_t)(clusters[c].x_m * 1000.0f);
+            b4.clusters[c].y_mm = (int16_t)(clusters[c].y_m * 1000.0f);
+            b4.clusters[c].z_mm = (int16_t)(clusters[c].z_m * 1000.0f);
+            b4.clusters[c].vel_q8 = (int16_t)(clusters[c].velocity_mps * 256.0f);
+            b4.clusters[c].snr_q8 = (int16_t)(clusters[c].snr_db * 256.0f);
+            strncpy(b4.clusters[c].seat, clusters[c].assigned_seat, 3);
+            b4.clusters[c].seat[3] = '\0';
+        }
+        FILE *bfp = fopen("stage4_clusters_out.bin", "wb");
+        if (bfp != NULL) {
+            fwrite(&b4, 1, sizeof(b4), bfp);
+            fclose(bfp);
+            printf("  [BIN DUMP] Saved Stage 4 compact clustering output (%u B) -> stage4_clusters_out.bin\n", (unsigned int)sizeof(b4));
+        }
     }
 
     if (trace) {
@@ -542,11 +674,120 @@ int BIST_Stage4_ExecuteClustering(const CfarPeakRecord *peaks, int num_peaks, Oc
 }
 
 /* ===================================================================================
+ * Combined Master QSPI Flash Image Generator
+ * =================================================================================== */
+void BIST_GenerateCombinedQspiFlashImage(uint32_t stage_mask) {
+    /* Pack entire BIST ground-truth into a single flash image with self-checking CRCs */
+    FILE *fp = fopen("awrl6844_bist_qspi_dump.bin", "wb");
+    if (fp == NULL) return;
+
+    /* Prepare Stage 2, 3, 4 binary payloads */
+    BistStage2Bin b2;
+    memset(&b2, 0, sizeof(b2));
+    b2.p1_doppler_bin = 9;
+    b2.p2_doppler_bin = 6;
+    b2.p1_velocity_q8 = (int16_t)(TARGET1_VEL_MPS * 256.0f);
+    b2.p2_velocity_q8 = (int16_t)(TARGET2_VEL_MPS * 256.0f);
+
+    BistStage3Bin b3;
+    memset(&b3, 0, sizeof(b3));
+    b3.num_peaks = 2;
+    b3.peaks[0] = g_cfar_peaks[0];
+    b3.peaks[1] = g_cfar_peaks[1];
+
+    BistStage4Bin b4;
+    memset(&b4, 0, sizeof(b4));
+    b4.num_clusters = 2;
+    for (int c = 0; c < 2; c++) {
+        b4.clusters[c].x_mm = (int16_t)(g_clusters[c].x_m * 1000.0f);
+        b4.clusters[c].y_mm = (int16_t)(g_clusters[c].y_m * 1000.0f);
+        b4.clusters[c].z_mm = (int16_t)(g_clusters[c].z_m * 1000.0f);
+        b4.clusters[c].vel_q8 = (int16_t)(g_clusters[c].velocity_mps * 256.0f);
+        b4.clusters[c].snr_q8 = (int16_t)(g_clusters[c].snr_db * 256.0f);
+        strncpy(b4.clusters[c].seat, g_clusters[c].assigned_seat, 3);
+        b4.clusters[c].seat[3] = '\0';
+    }
+
+    /* Offsets calculation:
+     * Header: 20 Bytes
+     * Stage Table: 5 * 16 = 80 Bytes
+     * Total Headers: 100 Bytes
+     * Payload 0: 1024 Bytes (Offset 100)
+     * Payload 1: 1024 Bytes (Offset 1124)
+     * Payload 2: 16 Bytes   (Offset 2148)
+     * Payload 3: 20 Bytes   (Offset 2164)
+     * Payload 4: 52 Bytes   (Offset 2184)
+     * Total Image: 2236 Bytes (~2.18 KB)
+     */
+    uint32_t header_len = sizeof(BistFlashMasterHeader);
+    uint32_t table_len = 5 * sizeof(BistFlashStageEntry);
+    uint32_t current_offset = header_len + table_len;
+
+    BistFlashStageEntry entries[5];
+    memset(entries, 0, sizeof(entries));
+
+    /* Entry 0: Stage 0 ADC Input (1024 B) */
+    entries[0].stage_id = 0;
+    entries[0].payload_offset = current_offset;
+    entries[0].payload_size = BIST_PING_BUFFER_SIZE;
+    entries[0].payload_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)g_bist_ping_adc_buf, BIST_PING_BUFFER_SIZE);
+    current_offset += entries[0].payload_size;
+
+    /* Entry 1: Stage 1 FFT Output (1024 B) */
+    entries[1].stage_id = 1;
+    entries[1].payload_offset = current_offset;
+    entries[1].payload_size = BIST_PONG_BUFFER_SIZE;
+    entries[1].payload_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)g_bist_pong_fft_buf, BIST_PONG_BUFFER_SIZE);
+    current_offset += entries[1].payload_size;
+
+    /* Entry 2: Stage 2 Doppler (16 B) */
+    entries[2].stage_id = 2;
+    entries[2].payload_offset = current_offset;
+    entries[2].payload_size = sizeof(b2);
+    entries[2].payload_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)&b2, sizeof(b2));
+    current_offset += entries[2].payload_size;
+
+    /* Entry 3: Stage 3 CFAR (sizeof(b3)) */
+    entries[3].stage_id = 3;
+    entries[3].payload_offset = current_offset;
+    entries[3].payload_size = sizeof(b3);
+    entries[3].payload_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)&b3, sizeof(b3));
+    current_offset += entries[3].payload_size;
+
+    /* Entry 4: Stage 4 Clustering (sizeof(b4)) */
+    entries[4].stage_id = 4;
+    entries[4].payload_offset = current_offset;
+    entries[4].payload_size = sizeof(b4);
+    entries[4].payload_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)&b4, sizeof(b4));
+    current_offset += entries[4].payload_size;
+
+    BistFlashMasterHeader hdr;
+    hdr.magic = BIST_FLASH_MAGIC;
+    hdr.version = BIST_FLASH_VERSION;
+    hdr.stage_mask = stage_mask;
+    hdr.total_image_size = current_offset;
+    hdr.header_crc32 = BIST_ComputeBufferCRC32((const uint8_t*)&hdr, 16);
+
+    /* Write to file */
+    fwrite(&hdr, 1, sizeof(hdr), fp);
+    fwrite(entries, 1, sizeof(entries), fp);
+    fwrite(g_bist_ping_adc_buf, 1, BIST_PING_BUFFER_SIZE, fp);
+    fwrite(g_bist_pong_fft_buf, 1, BIST_PONG_BUFFER_SIZE, fp);
+    fwrite(&b2, 1, sizeof(b2), fp);
+    fwrite(&b3, 1, sizeof(b3), fp);
+    fwrite(&b4, 1, sizeof(b4), fp);
+
+    fclose(fp);
+    printf("  [COMBINED QSPI FLASH IMAGE] Generated awrl6844_bist_qspi_dump.bin (%u Bytes / 2.18 KB)\n", current_offset);
+}
+
+/* ===================================================================================
  * Main Verification Runner
  * =================================================================================== */
 int main(int argc, char *argv[]) {
     uint32_t stage_mask = 0x1FU; /* Default: all stages 0,1,2,3,4 */
     bool trace = false;
+    bool bin_dump = false;
 
     /* Parse command line arguments */
     for (int i = 1; i < argc; i++) {
@@ -564,12 +805,15 @@ int main(int argc, char *argv[]) {
             free(arg_copy);
         } else if (strcmp(argv[i], "--trace") == 0 || strcmp(argv[i], "trace=1") == 0) {
             trace = true;
+        } else if (strcmp(argv[i], "--bin") == 0 || strcmp(argv[i], "--bin-dump") == 0 || strcmp(argv[i], "bin=1") == 0) {
+            bin_dump = true;
         } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            printf("Usage: %s [stage=0,1,2,3,4] [stage_mask=0x1F] [--trace]\n", argv[0]);
+            printf("Usage: %s [stage=0,1,2,3,4] [stage_mask=0x1F] [--trace] [--bin]\n", argv[0]);
             printf("Examples:\n");
             printf("  %s stage=0,1\n", argv[0]);
             printf("  %s stage_mask=0x7\n", argv[0]);
             printf("  %s stage_mask=0x1F --trace\n", argv[0]);
+            printf("  %s stage_mask=0x1F --trace --bin\n", argv[0]);
             return 0;
         }
     }
@@ -584,10 +828,10 @@ int main(int argc, char *argv[]) {
     printf(")\n======================================================================\n\n");
 
     /* Profiling pass to obtain exact golden CRC signatures */
-    BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, false);
+    BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, false, false);
     uint32_t golden_crc_s0 = BIST_ComputeBufferCRC32((const uint8_t*)g_bist_ping_adc_buf, BIST_PING_BUFFER_SIZE);
     
-    BIST_Stage1_ExecuteRangeFFT(g_bist_ping_adc_buf, g_bist_pong_fft_buf, false);
+    BIST_Stage1_ExecuteRangeFFT(g_bist_ping_adc_buf, g_bist_pong_fft_buf, false, false);
     uint32_t golden_crc_s1 = BIST_ComputeBufferCRC32((const uint8_t*)g_bist_pong_fft_buf, BIST_PONG_BUFFER_SIZE);
 
     bool all_passed = true;
@@ -597,7 +841,7 @@ int main(int argc, char *argv[]) {
      * ------------------------------------------------------------------------------- */
     if (stage_mask & BIST_STAGE_0_MASK) {
         printf("[STAGE 0] Raw ADC Sampling & In-Cabin Synthesis...\n");
-        BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, trace);
+        BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, trace, bin_dump);
         uint32_t crc_s0 = BIST_ComputeBufferCRC32((const uint8_t*)g_bist_ping_adc_buf, BIST_PING_BUFFER_SIZE);
         bool s0_ok = (crc_s0 == golden_crc_s0);
         printf("  - Buffer Allocation: %u Bytes (Ping)\n", (unsigned int)sizeof(g_bist_ping_adc_buf));
@@ -611,9 +855,9 @@ int main(int argc, char *argv[]) {
     if (stage_mask & BIST_STAGE_1_MASK) {
         printf("\n[STAGE 1] 1D Range FFT (HWA 1.2 Fixed-Point Emulation)...\n");
         if (!(stage_mask & BIST_STAGE_0_MASK)) {
-            BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, false);
+            BIST_Stage0_GenerateADC(g_bist_ping_adc_buf, false, false);
         }
-        BIST_Stage1_ExecuteRangeFFT(g_bist_ping_adc_buf, g_bist_pong_fft_buf, trace);
+        BIST_Stage1_ExecuteRangeFFT(g_bist_ping_adc_buf, g_bist_pong_fft_buf, trace, bin_dump);
 
         /* Peak Bin Verification */
         uint16_t exp_p1 = BIST_CalculateExpectedPeakBin(TARGET1_RANGE_M); /* Bin 20 */
@@ -670,7 +914,7 @@ int main(int argc, char *argv[]) {
      * ------------------------------------------------------------------------------- */
     if (stage_mask & BIST_STAGE_2_MASK) {
         printf("\n[STAGE 2] 2D Doppler FFT & Velocity Slicing...\n");
-        Stage2_DopplerResult dop = BIST_Stage2_ExecuteDoppler(g_bist_pong_fft_buf, trace);
+        Stage2_DopplerResult dop = BIST_Stage2_ExecuteDoppler(g_bist_pong_fft_buf, trace, bin_dump);
         bool d1_ok = (dop.peak1_doppler_bin == 9);
         bool d2_ok = (dop.peak2_doppler_bin == 6);
         printf("  - Target 1 Doppler Bin:  %u (v = %+.2f m/s) -> [%s]\n", dop.peak1_doppler_bin, dop.peak1_vel_mps, d1_ok ? "PASS" : "FAIL");
@@ -683,7 +927,7 @@ int main(int argc, char *argv[]) {
      * ------------------------------------------------------------------------------- */
     if (stage_mask & BIST_STAGE_3_MASK) {
         printf("\n[STAGE 3] CFAR-CA Peak Detection & Thresholding...\n");
-        int np = BIST_Stage3_ExecuteCFAR(g_bist_pong_fft_buf, g_cfar_peaks, trace);
+        int np = BIST_Stage3_ExecuteCFAR(g_bist_pong_fft_buf, g_cfar_peaks, trace, bin_dump);
         bool np_ok = (np == 2);
         printf("  - Total Validated Peaks: %d (Expected: 2) -> [%s]\n", np, np_ok ? "PASS" : "FAIL");
         if (!np_ok) all_passed = false;
@@ -694,23 +938,36 @@ int main(int argc, char *argv[]) {
      * ------------------------------------------------------------------------------- */
     if (stage_mask & BIST_STAGE_4_MASK) {
         printf("\n[STAGE 4] AoA & DBSCAN Occupant Clustering...\n");
-        int nc = BIST_Stage4_ExecuteClustering(g_cfar_peaks, 2, g_clusters, trace);
+        int nc = BIST_Stage4_ExecuteClustering(g_cfar_peaks, 2, g_clusters, trace, bin_dump);
         bool nc_ok = (nc == 2 && strcmp(g_clusters[0].assigned_seat, "FL") == 0 && strcmp(g_clusters[1].assigned_seat, "BR") == 0);
         printf("  - Assigned Vehicle Seats: [%s, %s] (Expected: [FL, BR]) -> [%s]\n",
                g_clusters[0].assigned_seat, g_clusters[1].assigned_seat, nc_ok ? "PASS" : "FAIL");
         if (!nc_ok) all_passed = false;
     }
 
+    if (bin_dump) {
+        BIST_GenerateCombinedQspiFlashImage(stage_mask);
+    }
+
     printf("\n----------------------------------------------------------------------\n");
     if (all_passed) {
         printf(">>> BIST TEST SUITE RESULT: ALL ACTIVE STAGES PASSED (0x%02X) <<<\n", stage_mask);
         if (trace) {
-            printf("\n[TRACE LOG SUMMARY] Generated per-stage trace files in current directory:\n");
+            printf("\n[TRACE LOG SUMMARY] Generated per-stage text trace files:\n");
             if (stage_mask & BIST_STAGE_0_MASK) printf("  - stage0_adc_trace.log        (256 I/Q ADC samples & parameters)\n");
             if (stage_mask & BIST_STAGE_1_MASK) printf("  - stage1_fft_trace.log        (128 FFT range bin spectrum & peaks)\n");
             if (stage_mask & BIST_STAGE_2_MASK) printf("  - stage2_doppler_trace.log    (16-bin Doppler spectrum & velocity)\n");
             if (stage_mask & BIST_STAGE_3_MASK) printf("  - stage3_cfar_trace.log       (CFAR noise floor, SNR & detections)\n");
             if (stage_mask & BIST_STAGE_4_MASK) printf("  - stage4_clustering_trace.log (3D cabin coordinates & seat assignments)\n");
+        }
+        if (bin_dump) {
+            printf("\n[BINARY FLASH DUMP SUMMARY] Generated compact QSPI flash binary files:\n");
+            if (stage_mask & BIST_STAGE_0_MASK) printf("  - stage0_adc_in.bin           (1,024 Bytes - Exact raw ADC Q15 input payload)\n");
+            if (stage_mask & BIST_STAGE_1_MASK) printf("  - stage1_fft_out.bin          (1,024 Bytes - Range FFT Q15 output payload)\n");
+            if (stage_mask & BIST_STAGE_2_MASK) printf("  - stage2_doppler_out.bin      (16 Bytes    - Doppler velocity bins & fixed-point m/s)\n");
+            if (stage_mask & BIST_STAGE_3_MASK) printf("  - stage3_cfar_out.bin         (20 Bytes    - Detected peaks, range/Doppler bin, SNR)\n");
+            if (stage_mask & BIST_STAGE_4_MASK) printf("  - stage4_clusters_out.bin     (52 Bytes    - 3D Cartesian mm coordinates, seat tags)\n");
+            printf("  - awrl6844_bist_qspi_dump.bin (2,236 Bytes / 2.18 KB - Complete master QSPI flash image)\n");
         }
         return 0;
     } else {

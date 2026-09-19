@@ -205,6 +205,52 @@ When running `./bist_sim` with `--trace` (or `make run-trace`), detailed formatt
 
 ---
 
+### Compact Binary QSPI Flash Dumps & Python Hardware Comparator
+
+To test physical hardware and embedded firmware with **minimum storage in QSPI flash**, the simulator supports compact binary dumps (`--bin` or `make run-bin`):
+
+```bash
+# Generate compact binary dumps for all stages and single combined QSPI flash image
+./bist_sim stage_mask=0x1F --bin
+# Or using make:
+make run-bin
+```
+
+#### Generated Compact Binary Files (Minimum Flash Storage):
+| File Name | Payload Description | Flash Footprint | Memory Format |
+|---|---|---|---|
+| **`stage0_adc_in.bin`** | Raw ADC Chirp Input | **1,024 Bytes** | 256 Complex samples $\times$ 4 Bytes (16-bit Q15 I + 16-bit Q15 Q) |
+| **`stage1_fft_out.bin`** | 1D Range FFT Profile Output | **1,024 Bytes** | 256 Complex bins $\times$ 4 Bytes (16-bit Q15 Real + Imag) |
+| **`stage2_doppler_out.bin`** | 2D Doppler Velocity Slices | **16 Bytes** | Target 1 & 2 Doppler bins + Q8 fixed-point speeds |
+| **`stage3_cfar_out.bin`** | CFAR Point Cloud Detections | **20 Bytes** | Peak count, Range/Doppler bins, Peak dB, Noise dB, SNR |
+| **`stage4_clusters_out.bin`** | 3D Occupant Spatial Clusters | **52 Bytes** | Cluster count, $(x, y, z)$ in mm, velocity, SNR, seat strings (`FL`, `BR`) |
+| **`awrl6844_bist_qspi_dump.bin`** | **Master QSPI Flash Image** | **2,236 Bytes (~2.18 KB)** | Master header, Stage allocation table, and embedded payloads with CRC-32 |
+
+#### Firmware QSPI Read/Write & Python Verification Flow:
+1. **Flash Input to Target Hardware**: Write `stage0_adc_in.bin` into your target board's QSPI flash input partition.
+2. **Firmware Execution**: Your DSP/HWA firmware reads the ADC payload from QSPI flash, executes the BIST pipeline, and writes the resulting output buffers to QSPI flash.
+3. **Readback & Bit-Exact Verification**: Read back the QSPI flash outputs and compare against the simulator ground-truth using `scripts/compare_qspi_flash.py`:
+
+```bash
+# Inspect and verify local simulation binary dumps
+python3 scripts/compare_qspi_flash.py --verify-sim
+
+# Bit-exact compare between host simulation and hardware QSPI flash dumps
+python3 scripts/compare_qspi_flash.py --sim-dir . --hw-dir /path/to/hw_qspi_dumps
+```
+
+If both hardware and simulation match, the script reports:
+```text
+  ✅ Stage 0 ADC Input Payload: EXACT MATCH (1024 Bytes) | CRC-32 = 0x9AD30C85
+  ✅ Stage 1 Range FFT Output:  EXACT MATCH (1024 Bytes) | CRC-32 = 0x91332940
+  ✅ Stage 2 Doppler Velocity:  EXACT MATCH (16 Bytes)   | CRC-32 = 0x...
+  ✅ Stage 3 CFAR Detection:    EXACT MATCH (20 Bytes)   | CRC-32 = 0x...
+  ✅ Stage 4 Occupant Clusters: EXACT MATCH (52 Bytes)   | CRC-32 = 0x...
+>>> FINAL RESULT: SIMULATION AND HARDWARE OUTPUTS MATCH EXACTLY! <<<
+```
+
+---
+
 ## 4. How to Use the AWRL6844 App
 
 The web interface is divided into functional operational views accessible via the navigation header:
