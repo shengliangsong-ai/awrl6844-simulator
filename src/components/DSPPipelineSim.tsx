@@ -274,72 +274,90 @@ export const DSPPipelineSim: React.FC<{ socType: string; onOpenDocs?: (docName?:
       title: "Stage 0: ADC Buffer",
       unit: "RF Frontend + 12-bit ADC + CBUFF",
       input: "Analog IF Beat Signal",
+      inSize: "256 KB (262,144 B)",
       output: "Raw ADC Samples",
+      outSize: "256 KB (262,144 B)",
       inFormat: "Continuous differential IF beat waveform (-1.8V to +1.8V differential) from 57-64 GHz RF downconversion.",
       outFormat: `12-bit signed integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples] at 25 Msps.`,
       memory: "HWA ACCEL_MEM (0x05100000)",
       math: "f_{IF} = \\frac{2 S R}{c} + \\frac{2 v}{\\lambda}",
       desc: "The hardware fractional-N PLL generates a ~60GHz chirp via the analog TX chain. The reflected analog signal is mixed with the transmitted chirp to create an IF beat frequency, which the ADC samples at 25 Msps into ACCEL_MEM.",
+      compareCriteria: "Bit-exact DMA transfer verification: CRC-32 golden hash match, zero dropped ADC buffers, CBUFF write pointers intact.",
       purpose: "Captures raw electromagnetic reflections from cabin interior (seats, dashboard, occupants, chest-wall micro-motion)."
     },
     1: {
       title: "Stage 1: 1D Range FFT (Range Profile)",
       unit: "HWA 1.2 FFT Engine",
       input: "Raw ADC Samples",
+      inSize: "256 KB (262,144 B)",
       output: "Range Profile",
+      outSize: "256 KB packed / 512 KB unpacked",
       inFormat: "16-bit ADC samples fetched from ACCEL_MEM via EDMA.",
       outFormat: `24-bit Complex I/Q fixed-point values. Computed via Radix-2 butterfly. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [128 Range Bins].`,
       memory: "HWA M0/M1/M2/M3 RAM",
       math: "X[k] = \\sum_{n=0}^{N-1} \\left( x[n] \\cdot w[n] \\right) e^{-j\\frac{2\\pi}{N}nk} \\quad \\rightarrow \\quad X_{dB}[k] = 20 \\log_{10}(|X[k]|)",
       desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 1D FFT. The resulting 'Range Profile' shows the relative power of targets at different distances.",
+      compareCriteria: "Range Peak Bin error ±0 bins; Signal-to-Quantization-Noise (SQNR) ≥ 45 dB vs double-precision model; Peak power error ≤ 1.0 dB.",
       purpose: "Resolves radial distance (R = c * f_IF / 2S). Separates front seats (0.8m) from rear seats (1.4m) and cabin clutter."
     },
     2: {
       title: "Stage 2: 2D Doppler FFT (Radar Cube)",
       unit: "HWA 1.2 + EDMA Transpose",
       input: "1D Range Profile (Transposed)",
+      inSize: "256 KB (262,144 B)",
       output: "3D Radar Cube",
+      outSize: "128 KB (Log-Mag) or 256 KB (Complex)",
       inFormat: `Transposed 1D FFT results: [${numChannels} Rx] × [128 Range Bins] × [64 Chirps]. 24-bit complex.`,
       outFormat: `3D Range-Doppler Heatmap. Dimensions: [${numChannels} Rx Channels] × [128 Range Bins] × [64 Doppler Bins]. 24-bit complex or 16-bit log-mag.`,
       memory: "DSS L3 Shared RAM (0x88000000)",
       math: "Y[m, k] = \\sum_{p=0}^{M-1} X_{transposed}[p, k] \\cdot w_{doppler}[p] \\cdot e^{-j\\frac{2\\pi}{M}pm}",
       desc: "The HWA performs address transposition to group samples across consecutive coherent chirps, then computes a 2D FFT to resolve velocities, followed by an FFT shift centering 0 m/s.",
+      compareCriteria: "Doppler peak index ±0 bin match; Static clutter centered at Doppler bin 32 (0 m/s); PSNR ≥ 42 dB vs reference.",
       purpose: "Resolves relative velocity (v = λ * f_D / 2). Separates static car interior (0 m/s) from occupant breathing (0.1–0.4 m/s)."
     },
     3: {
       title: "Stage 3: CFAR Detection",
       unit: "HWA 1.2 CFAR Unit (Cell-Averaging)",
       input: "2D Range-Doppler Heatmap",
+      inSize: "16 KB per channel (16,384 B)",
       output: "Detected Peaks List",
+      outSize: "8 to 256 B (1 KB buffer)",
       inFormat: "Radar Cube converted to Log-Magnitude (0.0625 dB/LSB steps) from DSS L3.",
       outFormat: "Array of structs: { rangeIdx: uint16, dopplerIdx: uint16, power: uint16, noise: uint16 }.",
       memory: "DSS L2 RAM (0x80800000)",
       math: "\\text{Power}[m, k] = 10 \\log_{10}\\left( |Y[m, k]|^2 \\right) \\quad \\rightarrow \\quad Threshold = \\frac{1}{N_{train}} \\sum_{i \\in \\text{Train}} \\text{Power}_i + T_{dB}",
       desc: "Converts complex I/Q inputs to logarithmic power. Employs sliding-window cell averaging (CFAR-CA) across training and guard cells to evaluate the local noise floor and flag peaks.",
+      compareCriteria: "Zero false negatives (100% target detection); Zero false positives in synthetic frame; Peak SNR error ≤ 0.5 dB.",
       purpose: "Suppresses thermal noise, multipath ground bounce, and carpet reflections while flagging genuine biological targets."
     },
     4: {
       title: "Stage 4: DSP Clustering & AoA",
       unit: "TMS320C66x DSP + ARM Cortex-R5F",
       input: "Detected Peaks List + Antenna Phase Vectors",
+      inSize: "512 Bytes",
       output: "Object Point Cloud & Tracks",
+      outSize: "100 to 500 Bytes",
       inFormat: "Sparse list of CFAR peaks with virtual antenna array complex phase responses.",
       outFormat: "Structured object tracks: [X (m), Y (m), Z (m), Velocity (m/s), SNR (dB)]. Sent over CAN-FD / UART.",
       memory: "C66x DSP internal structures / DSS L2 & APP TCMA",
       math: "P(\\theta, \\phi) = \\frac{1}{\\mathbf{a}^H \\mathbf{R}_{xx}^{-1} \\mathbf{a}} \\quad \\text{and} \\quad \\text{Discard if } |v| \\le 0.05\\text{ m/s}",
       desc: "The C66x DSP processes peaks: discards static targets (0 m/s) like empty seats, resolves Angle-of-Arrival (AoA), clusters points using DBSCAN, and tracks living occupants over successive frames.",
+      compareCriteria: "Range error ≤ ±0.05m; Azimuth angle error ≤ ±2.0°; Velocity error ≤ ±0.03 m/s; Correct Adult vs Infant classification.",
       purpose: "Classifies occupant type (Adult vs. Infant in child safety seat), measures respiration BPM, and eliminates false alarms."
     },
     5: {
       title: "Stage 5: Vehicle Gateway & PMIC Safety",
       unit: "MCAN (CAN-FD) + ESM Diagnostics",
       input: "Validated Occupant State & Safety Telemetry",
+      inSize: "~64 Bytes",
       output: "CAN-FD Frames & PMIC Alarm Signals",
+      outSize: "64 to 128 Bytes",
       inFormat: "Tracked object states, child presence alert flags, and ASIL-B ESM safety status vectors.",
       outFormat: "ISO 11898-1 CAN-FD 64-byte payload messages (5 Mbps) & hardware nERROR_OUT signal pin.",
       memory: "APP_CANCFG (0x52000000), APP_SCI, PMIC line",
       math: "\\text{CRC-16/32 Checksum} + \\text{nERROR\\_OUT Strobe}",
       desc: "Cortex-R5F serializes classification results into CAN-FD frames transmitted to the body domain controller and PMIC for safety handshakes.",
+      compareCriteria: "Exact 64-byte payload verification; Valid CRC-16/32 bitstream; Transmit latency ≤ 100 µs; nERROR_OUT de-asserted (3.3V).",
       purpose: "Triggers Child Presence Detection (CPD) alarm, Seat Belt Reminder (SBR), and smart airbag suppression."
     }
   };
@@ -463,13 +481,13 @@ export const DSPPipelineSim: React.FC<{ socType: string; onOpenDocs?: (docName?:
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4 w-44">Stage & Hardware Unit</th>
-                  <th className="py-3 px-4 min-w-[200px]">Input Signal & Format</th>
-                  <th className="py-3 px-4 min-w-[220px]">Output Artifact & Format</th>
-                  <th className="py-3 px-4 min-w-[160px]">Memory Subsystem</th>
-                  <th className="py-3 px-4 min-w-[180px]">Mathematical Kernel</th>
-                  <th className="py-3 px-4 min-w-[200px]">In-Cabin Purpose</th>
-                  <th className="py-3 px-3 w-24 text-center">Action</th>
+                  <th className="py-3 px-3 w-40">Stage & Hardware Unit</th>
+                  <th className="py-3 px-3 min-w-[200px]">Input Signal & Size</th>
+                  <th className="py-3 px-3 min-w-[220px]">Output Artifact & Size</th>
+                  <th className="py-3 px-3 min-w-[140px]">Memory Subsystem</th>
+                  <th className="py-3 px-3 min-w-[220px]">Self-Test Acceptance & Criteria</th>
+                  <th className="py-3 px-3 min-w-[170px]">Mathematical Kernel</th>
+                  <th className="py-3 px-3 w-20 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-sans">
@@ -481,7 +499,7 @@ export const DSPPipelineSim: React.FC<{ socType: string; onOpenDocs?: (docName?:
                       key={key} 
                       className={`hover:bg-slate-900/70 transition-colors ${isSelected ? 'bg-indigo-950/20' : ''}`}
                     >
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-3 align-top">
                         <div className="flex flex-col gap-1">
                           <span className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
                             <span className="w-5 h-5 rounded-full bg-indigo-900/60 text-indigo-300 flex items-center justify-center text-[10px] font-mono font-bold border border-indigo-700/50">
@@ -489,52 +507,64 @@ export const DSPPipelineSim: React.FC<{ socType: string; onOpenDocs?: (docName?:
                             </span>
                             {stage.title.split(': ')[1] || stage.title}
                           </span>
-                          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-900/40 w-fit">
+                          <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-900/40 w-fit">
                             {stage.unit}
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-3 align-top">
                         <div className="space-y-1">
-                          <div className="font-semibold text-amber-300 text-[11px] flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
-                            {stage.input}
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="font-semibold text-amber-300 text-[11px] flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
+                              {stage.input}
+                            </div>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-900/50">
+                              {stage.inSize}
+                            </span>
                           </div>
-                          <div className="font-mono text-[11px] text-slate-300 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                          <div className="font-mono text-[10.5px] text-slate-300 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
                             {stage.inFormat}
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-3 align-top">
                         <div className="space-y-1">
-                          <div className="font-semibold text-emerald-300 text-[11px] flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-                            {stage.output}
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="font-semibold text-emerald-300 text-[11px] flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                              {stage.output}
+                            </div>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-900/50">
+                              {stage.outSize}
+                            </span>
                           </div>
-                          <div className="font-mono text-[11px] text-emerald-200/90 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                          <div className="font-mono text-[10.5px] text-emerald-200/90 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
                             {stage.outFormat}
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 align-top">
-                        <span className="font-mono text-[11px] text-purple-300 bg-purple-950/30 px-2 py-1 rounded border border-purple-900/40 block leading-tight">
+                      <td className="py-3.5 px-3 align-top">
+                        <span className="font-mono text-[10.5px] text-purple-300 bg-purple-950/30 px-2 py-1 rounded border border-purple-900/40 block leading-tight">
                           {stage.memory}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 align-top font-mono">
-                        <div className="bg-slate-900 p-2 rounded border border-slate-800 text-[11px] text-slate-300 overflow-x-auto">
-                          <BlockMath math={stage.math} />
+                      <td className="py-3.5 px-3 align-top">
+                        <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                          <p className="text-[11px] text-sky-200/90 font-medium leading-relaxed">
+                            {stage.compareCriteria}
+                          </p>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 align-top">
-                        <p className="text-[11px] text-slate-300 leading-relaxed">
-                          {stage.purpose}
-                        </p>
+                      <td className="py-3.5 px-3 align-top font-mono">
+                        <div className="bg-slate-900 p-1.5 rounded border border-slate-800 text-[10.5px] text-slate-300 overflow-x-auto">
+                          <BlockMath math={stage.math} />
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-3 align-top text-center">
