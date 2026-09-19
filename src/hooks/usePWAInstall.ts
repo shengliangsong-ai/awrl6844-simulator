@@ -9,6 +9,10 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isMac, setIsMac] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [isIframe, setIsIframe] = useState(false);
 
   useEffect(() => {
     // Detect standalone mode (already installed)
@@ -17,10 +21,21 @@ export function usePWAInstall() {
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     setIsInstalled(isStandalone);
 
-    // Detect iOS devices
+    // Detect iframe
+    const inIframe = window.self !== window.top;
+    setIsIframe(inIframe);
+
+    // Detect platform
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroidDevice = /android/.test(userAgent);
+    const isMacDevice = /macintosh|mac os x/.test(userAgent) && !isIOSDevice;
+    const isWindowsDevice = /windows/.test(userAgent);
+
     setIsIOS(isIOSDevice);
+    setIsMac(isMacDevice);
+    setIsWindows(isWindowsDevice);
+    setIsDesktop(!isIOSDevice && !isAndroidDevice);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -61,6 +76,10 @@ export function usePWAInstall() {
     isInstallable: !!deferredPrompt,
     isInstalled,
     isIOS,
+    isMac,
+    isWindows,
+    isDesktop,
+    isIframe,
     install,
   };
 }

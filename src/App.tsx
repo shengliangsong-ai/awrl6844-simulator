@@ -1,62 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Terminal, Cpu, Zap, MemoryStick, Send, AlertTriangle, Play, RefreshCw, Layers, PlayCircle, Upload, Download, Book, Edit3, Activity, Server, Database } from 'lucide-react';
 import { Simulator } from './lib/simulator';
-import { usePWAInstall } from './hooks/usePWAInstall';
 import { DocViewer } from './components/DocViewer';
 import { DSPPipelineSim } from './components/DSPPipelineSim';
 import { LiveHardwareDebug } from './components/LiveHardwareDebug';
 import { InteractiveRegisterMap } from './components/InteractiveRegisterMap';
-
-export const PWAInstallButton: React.FC = () => {
-  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
-
-  if (isInstalled) return null;
-
-  if (isInstallable) {
-    return (
-      <button
-        onClick={install}
-        className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 transition"
-      >
-        <Download className="w-3.5 h-3.5" />
-        Install App Locally
-      </button>
-    );
-  }
-
-  if (isIOS) {
-    return (
-      <>
-        <button
-          onClick={() => setShowIOSGuide(true)}
-          className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 transition"
-        >
-          <Download className="w-3.5 h-3.5" />
-          Install App
-        </button>
-        {showIOSGuide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-sm rounded-xl bg-slate-900 p-6 shadow-xl border border-slate-800">
-              <h3 className="text-lg font-semibold text-white">Install on iOS</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                1. Tap the <strong>Share</strong> button in Safari.<br />
-                2. Tap <strong>Add to Home Screen</strong>.
-              </p>
-              <button
-                onClick={() => setShowIOSGuide(false)}
-                className="mt-4 w-full rounded-lg bg-slate-800 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-  return null;
-};
+import { DesktopInstallButton } from './components/DesktopInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 export default function App() {
   const [appMode, setAppMode] = useState<'sim' | 'hardware' | 'registers'>('sim');
@@ -265,7 +215,7 @@ export default function App() {
             <Book className="w-3.5 h-3.5" />
             Documentation
           </button>
-          <PWAInstallButton />
+          <DesktopInstallButton />
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
@@ -775,6 +725,7 @@ export default function App() {
           </>
         )}
       </div>
+      <OfflineIndicator />
     </div>
   );
 }
