@@ -70,3 +70,20 @@ Simulates dynamic power gating transitions to verify low-power safety paths:
 1.  **Operational Modes**: Tracks virtual current draw across operational states: **Active** (~1145 mW), **Processing** (~335 mW), **Idle** (~28 mW), and **Deep Sleep** (~3.91 mW).
 2.  **Retention Checking**: When a transition to Deep Sleep is triggered via the `TOP_PRCM` control registers, the simulator evaluates memory state retention registers. If the retention bits are set, it preserves the `DSS_L3` virtual RAM array. Upon virtual wakeup, the bootloader sequence bypasses the external QSPI flash boot recovery cycle, directly resuming core execution.
 3.  **Fault Handling**: Allows injection of unmaskable diagnostics errors, forcing the central **Error Signaling Module (ESM)** register stack to drive the external virtual `nERROR_OUT` pin low, triggering host fail-safe routines.
+
+---
+
+## 3. Hardware Accelerator (HWA 1.2) & DSP Pipeline Stage Input/Output Table
+
+The following table summarizes the dataflow, word lengths, and memory targets across the 5 core stages modeled in the simulator:
+
+| Stage | Name | Hardware Unit | Input Signal / Data | Input Format & Word Length | Output Artifact | Output Format & Dimensions | Memory Subsystem |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **0** | **ADC Buffer** | RF Frontend + Pipeline ADC | Analog IF continuous-wave beat frequency | Continuous differential IF waveform ($\pm 1.8\text{ V}$) | Digitized Raw ADC Samples | 12-bit signed integers in 16-bit words; $[4\text{ Rx}] \times [128\text{ chirps}] \times [256\text{ samples}]$ | `HWA ACCEL_MEM` (`0x05100000`) |
+| **1** | **1D Range FFT** | HWA 1.2 FFT Accelerator | Raw ADC samples from `ACCEL_MEM` | 16-bit signed complex I/Q samples | 1D Range Profile | 24-bit fixed-point Complex I/Q; $[4\text{ Rx}] \times [128\text{ chirps}] \times [128\text{ bins}]$ | HWA Internal Ping-Pong RAM (`M0`–`M3`) |
+| **2** | **2D Doppler FFT** | HWA 1.2 + EDMA Transpose | 1D Range FFT results transposed across chirps | 24-bit complex samples grouped across chirps | 3D Range-Doppler Radar Cube | 24-bit Complex I/Q (or 16-bit log-mag); $[4\text{ Rx}] \times [128\text{ Range}] \times [64\text{ Doppler}]$ | `DSS_L3` Shared RAM (`0x88000000`) |
+| **3** | **CFAR Detection** | HWA 1.2 CFAR Unit | 2D Range-Doppler power heatmap slices | 16-bit log-magnitude power ($0.0625\text{ dB/LSB}$) | Sparse Detected Peaks List | List of `CfarPeak` structs: Range, Doppler, Power, Noise floor | `DSS_L2` SRAM (`0x80800000`) |
+| **4** | **DSP Clustering & AoA** | TMS320C66x DSP Core | CFAR peaks + 4-channel Rx antenna phase vectors | Sparse peak array with virtual antenna array phases | Validated Occupants & 3D Point Cloud | Point Cloud: $[X, Y, Z, V_r, \text{SNR}]$; Tracks: Bounding boxes, class (`Adult`/`Infant`), confidence (%) | `DSS_L2` & `APPSS_TCMA` (`0x00018000`) |
+| **5** | **Vehicle Gateway** | MCAN (CAN-FD) + ESM | Validated occupant classifications and diagnostics | Internal tracking state and diagnostic vectors | CAN-FD Frames & PMIC Alert Signals | ISO 11898-1 CAN-FD messages (5 Mbps) & hardware `nERROR_OUT` pin | `APP_CANCFG` (`0x52000000`), `APP_SCI` |
+
+*For complete mathematical derivations, memory topologies, and register offsets, refer to `dsp-pipeline-specification.md`.*

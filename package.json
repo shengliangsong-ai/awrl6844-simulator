@@ -28,6 +28,7 @@
     "react-katex": "^3.1.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.1",
     "three": "^0.185.1",
     "vite": "^6.2.3"
   },

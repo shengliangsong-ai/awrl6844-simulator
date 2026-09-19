@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight, RefreshCw, User, Baby, Car, Box } from 'lucide-react';
+import { Layers, PlayCircle, BarChart2, Hash, Waves, Filter, ArrowRight, RefreshCw, User, Baby, Car, Box, Table as TableIcon, BookOpen, ExternalLink, Cpu } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
 import { hanning, fft, cfarCA } from '../lib/dsp';
@@ -20,12 +20,13 @@ interface PipelineState {
   clusters: { r: number; d: number }[];
 }
 
-export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
+export const DSPPipelineSim: React.FC<{ socType: string; onOpenDocs?: (docName?: string) => void }> = ({ socType, onOpenDocs }) => {
   const numChannels = socType === 'AWRL6888' ? 8 : 4;
   
   const [isRunning, setIsRunning] = useState(false);
   const [activeStage, setActiveStage] = useState<number>(0);
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'pipeline' | 'table'>('pipeline');
   
   // Simulation parameters (simulating a subset of a frame for speed)
   const rangeBins = 128; // Samples per chirp
@@ -271,53 +272,75 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
   const STAGE_DETAILS: Record<number, any> = {
     0: {
       title: "Stage 0: ADC Buffer",
-      input: "Analog IF Signal",
+      unit: "RF Frontend + 12-bit ADC + CBUFF",
+      input: "Analog IF Beat Signal",
       output: "Raw ADC Samples",
-      inFormat: "Continuous FMCW waveform from RF frontend (Synthesized ~60GHz beat signal).",
-      outFormat: `12-bit real/complex integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples].`,
+      inFormat: "Continuous differential IF beat waveform (-1.8V to +1.8V differential) from 57-64 GHz RF downconversion.",
+      outFormat: `12-bit signed integers packed into 16-bit words. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [256 Samples] at 25 Msps.`,
       memory: "HWA ACCEL_MEM (0x05100000)",
-      math: "V_{in} = \\text{ADC\\_Code} \\times \\frac{1.8\\text{ V}}{2^{11}}",
-      desc: "The hardware fractional-N PLL generates a ~60GHz chirp via the analog TX chain. The reflected analog signal is mixed with the transmitted chirp to create an IF beat frequency, which the ADC samples at 25 Msps."
+      math: "f_{IF} = \\frac{2 S R}{c} + \\frac{2 v}{\\lambda}",
+      desc: "The hardware fractional-N PLL generates a ~60GHz chirp via the analog TX chain. The reflected analog signal is mixed with the transmitted chirp to create an IF beat frequency, which the ADC samples at 25 Msps into ACCEL_MEM.",
+      purpose: "Captures raw electromagnetic reflections from cabin interior (seats, dashboard, occupants, chest-wall micro-motion)."
     },
     1: {
       title: "Stage 1: 1D Range FFT (Range Profile)",
+      unit: "HWA 1.2 FFT Engine",
       input: "Raw ADC Samples",
       output: "Range Profile",
-      inFormat: "16-bit ADC samples fetched via EDMA.",
+      inFormat: "16-bit ADC samples fetched from ACCEL_MEM via EDMA.",
       outFormat: `24-bit Complex I/Q fixed-point values. Computed via Radix-2 butterfly. Dimensions: [${numChannels} Rx Channels] × [128 Chirps] × [128 Range Bins].`,
       memory: "HWA M0/M1/M2/M3 RAM",
       math: "X[k] = \\sum_{n=0}^{N-1} \\left( x[n] \\cdot w[n] \\right) e^{-j\\frac{2\\pi}{N}nk} \\quad \\rightarrow \\quad X_{dB}[k] = 20 \\log_{10}(|X[k]|)",
-      desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 1D FFT. The resulting 'Range Profile' (plotted here in Log Scale for the 0th Doppler bin) shows the relative power of targets at different distances."
+      desc: "HWA 1.2 calculates block averages to suppress DC leakage, multiplies by a real window function (e.g. Hanning), and runs a 1D FFT. The resulting 'Range Profile' shows the relative power of targets at different distances.",
+      purpose: "Resolves radial distance (R = c * f_IF / 2S). Separates front seats (0.8m) from rear seats (1.4m) and cabin clutter."
     },
     2: {
-      title: "Stage 2: 2D Doppler FFT",
-      input: "Range Profile",
-      output: "Radar Cube",
-      inFormat: "Transposed 1D FFT results: [Rx] × [Range Bins] × [Chirps].",
-      outFormat: `3D Range-Doppler Heatmap. Dimensions: [${numChannels} Rx Channels] × [128 Range Bins] × [64 Doppler Bins]. 24-bit complex.`,
-      memory: "DSS L3 RAM (0x88000000)",
+      title: "Stage 2: 2D Doppler FFT (Radar Cube)",
+      unit: "HWA 1.2 + EDMA Transpose",
+      input: "1D Range Profile (Transposed)",
+      output: "3D Radar Cube",
+      inFormat: `Transposed 1D FFT results: [${numChannels} Rx] × [128 Range Bins] × [64 Chirps]. 24-bit complex.`,
+      outFormat: `3D Range-Doppler Heatmap. Dimensions: [${numChannels} Rx Channels] × [128 Range Bins] × [64 Doppler Bins]. 24-bit complex or 16-bit log-mag.`,
+      memory: "DSS L3 Shared RAM (0x88000000)",
       math: "Y[m, k] = \\sum_{p=0}^{M-1} X_{transposed}[p, k] \\cdot w_{doppler}[p] \\cdot e^{-j\\frac{2\\pi}{M}pm}",
-      desc: "The HWA performs A-dim and B-dim address transposition to group samples across consecutive coherent chirps, then computes a 2D FFT to resolve velocities."
+      desc: "The HWA performs address transposition to group samples across consecutive coherent chirps, then computes a 2D FFT to resolve velocities, followed by an FFT shift centering 0 m/s.",
+      purpose: "Resolves relative velocity (v = λ * f_D / 2). Separates static car interior (0 m/s) from occupant breathing (0.1–0.4 m/s)."
     },
     3: {
       title: "Stage 3: CFAR Detection",
-      input: "Radar Cube",
+      unit: "HWA 1.2 CFAR Unit (Cell-Averaging)",
+      input: "2D Range-Doppler Heatmap",
       output: "Detected Peaks List",
-      inFormat: "Radar Cube converted to Log-Magnitude (0.06dB steps).",
+      inFormat: "Radar Cube converted to Log-Magnitude (0.0625 dB/LSB steps) from DSS L3.",
       outFormat: "Array of structs: { rangeIdx: uint16, dopplerIdx: uint16, power: uint16, noise: uint16 }.",
       memory: "DSS L2 RAM (0x80800000)",
       math: "\\text{Power}[m, k] = 10 \\log_{10}\\left( |Y[m, k]|^2 \\right) \\quad \\rightarrow \\quad Threshold = \\frac{1}{N_{train}} \\sum_{i \\in \\text{Train}} \\text{Power}_i + T_{dB}",
-      desc: "Converts complex I/Q inputs to logarithmic power. Employs sliding-window cell averaging (CFAR-CA) across training and guard cells to evaluate the local noise floor and flag peaks."
+      desc: "Converts complex I/Q inputs to logarithmic power. Employs sliding-window cell averaging (CFAR-CA) across training and guard cells to evaluate the local noise floor and flag peaks.",
+      purpose: "Suppresses thermal noise, multipath ground bounce, and carpet reflections while flagging genuine biological targets."
     },
     4: {
-      title: "Stage 4: DSP Clustering",
-      input: "Detected Peaks List",
-      output: "Object Point Cloud",
-      inFormat: "Sparse list of CFAR peaks.",
+      title: "Stage 4: DSP Clustering & AoA",
+      unit: "TMS320C66x DSP + ARM Cortex-R5F",
+      input: "Detected Peaks List + Antenna Phase Vectors",
+      output: "Object Point Cloud & Tracks",
+      inFormat: "Sparse list of CFAR peaks with virtual antenna array complex phase responses.",
       outFormat: "Structured object tracks: [X (m), Y (m), Z (m), Velocity (m/s), SNR (dB)]. Sent over CAN-FD / UART.",
-      memory: "C66x DSP internal structures",
-      math: "\\text{if } |v| \\approx 0 \\text{ then } \\text{Discard (Static Clutter)}",
-      desc: "The C66x DSP processes the peaks. First, it discards static targets (0 m/s velocity) like the dashboard and empty seats. Then, it resolves Angle-of-Arrival (AoA) for the moving targets and clusters the remaining points into living occupants."
+      memory: "C66x DSP internal structures / DSS L2 & APP TCMA",
+      math: "P(\\theta, \\phi) = \\frac{1}{\\mathbf{a}^H \\mathbf{R}_{xx}^{-1} \\mathbf{a}} \\quad \\text{and} \\quad \\text{Discard if } |v| \\le 0.05\\text{ m/s}",
+      desc: "The C66x DSP processes peaks: discards static targets (0 m/s) like empty seats, resolves Angle-of-Arrival (AoA), clusters points using DBSCAN, and tracks living occupants over successive frames.",
+      purpose: "Classifies occupant type (Adult vs. Infant in child safety seat), measures respiration BPM, and eliminates false alarms."
+    },
+    5: {
+      title: "Stage 5: Vehicle Gateway & PMIC Safety",
+      unit: "MCAN (CAN-FD) + ESM Diagnostics",
+      input: "Validated Occupant State & Safety Telemetry",
+      output: "CAN-FD Frames & PMIC Alarm Signals",
+      inFormat: "Tracked object states, child presence alert flags, and ASIL-B ESM safety status vectors.",
+      outFormat: "ISO 11898-1 CAN-FD 64-byte payload messages (5 Mbps) & hardware nERROR_OUT signal pin.",
+      memory: "APP_CANCFG (0x52000000), APP_SCI, PMIC line",
+      math: "\\text{CRC-16/32 Checksum} + \\text{nERROR\\_OUT Strobe}",
+      desc: "Cortex-R5F serializes classification results into CAN-FD frames transmitted to the body domain controller and PMIC for safety handshakes.",
+      purpose: "Triggers Child Presence Detection (CPD) alarm, Seat Belt Reminder (SBR), and smart airbag suppression."
     }
   };
 
@@ -349,10 +372,41 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
 
   return (
     <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden flex flex-col mt-4">
-      <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-indigo-400" />
-          <h3 className="font-semibold text-sm">HWA 1.2 & C66x DSP Pipeline Verification</h3>
+      <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-indigo-400" />
+            <h3 className="font-semibold text-sm">HWA 1.2 & C66x DSP Pipeline Verification</h3>
+          </div>
+
+          <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-700 ml-2">
+            <button
+              id="dsp-view-pipeline-btn"
+              onClick={() => setViewMode('pipeline')}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded transition-colors ${viewMode === 'pipeline' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              <Layers className="w-3.5 h-3.5" /> Pipeline Flow
+            </button>
+            <button
+              id="dsp-view-table-btn"
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded transition-colors ${viewMode === 'table' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              <TableIcon className="w-3.5 h-3.5" /> Stage I/O Table
+            </button>
+          </div>
+
+          {onOpenDocs && (
+            <button
+              id="dsp-open-spec-btn"
+              onClick={() => onOpenDocs('dsp-pipeline-specification.md')}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              title="Open full DSP Pipeline Specification in Docs"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Full Spec Doc</span>
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-6">
@@ -371,6 +425,7 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
           </div>
 
           <button 
+            id="dsp-run-sim-btn"
             onClick={executeMathPipeline}
             disabled={isRunning}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors h-12"
@@ -381,7 +436,132 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
         </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+      {viewMode === 'table' ? (
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                <TableIcon className="w-4 h-4 text-indigo-400" />
+                TI AWRL6844 / AWRL6888 DSP Pipeline Stage Input/Output Matrix
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Hardware accelerator (HWA 1.2) and DSP execution chain, data dimensions, memory allocation, and transfer functions.
+              </p>
+            </div>
+            {onOpenDocs && (
+              <button
+                onClick={() => onOpenDocs('dsp-pipeline-specification.md')}
+                className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+              >
+                <span>Read Detailed Specification</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 shadow-inner">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                  <th className="py-3 px-4 w-44">Stage & Hardware Unit</th>
+                  <th className="py-3 px-4 min-w-[200px]">Input Signal & Format</th>
+                  <th className="py-3 px-4 min-w-[220px]">Output Artifact & Format</th>
+                  <th className="py-3 px-4 min-w-[160px]">Memory Subsystem</th>
+                  <th className="py-3 px-4 min-w-[180px]">Mathematical Kernel</th>
+                  <th className="py-3 px-4 min-w-[200px]">In-Cabin Purpose</th>
+                  <th className="py-3 px-3 w-24 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-sans">
+                {Object.entries(STAGE_DETAILS).map(([key, stage]: [string, any]) => {
+                  const stageNum = parseInt(key, 10);
+                  const isSelected = selectedStage === stageNum;
+                  return (
+                    <tr 
+                      key={key} 
+                      className={`hover:bg-slate-900/70 transition-colors ${isSelected ? 'bg-indigo-950/20' : ''}`}
+                    >
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-indigo-900/60 text-indigo-300 flex items-center justify-center text-[10px] font-mono font-bold border border-indigo-700/50">
+                              {stageNum}
+                            </span>
+                            {stage.title.split(': ')[1] || stage.title}
+                          </span>
+                          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-900/40 w-fit">
+                            {stage.unit}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="space-y-1">
+                          <div className="font-semibold text-amber-300 text-[11px] flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>
+                            {stage.input}
+                          </div>
+                          <div className="font-mono text-[11px] text-slate-300 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                            {stage.inFormat}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="space-y-1">
+                          <div className="font-semibold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                            {stage.output}
+                          </div>
+                          <div className="font-mono text-[11px] text-emerald-200/90 leading-relaxed bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                            {stage.outFormat}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 align-top">
+                        <span className="font-mono text-[11px] text-purple-300 bg-purple-950/30 px-2 py-1 rounded border border-purple-900/40 block leading-tight">
+                          {stage.memory}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 align-top font-mono">
+                        <div className="bg-slate-900 p-2 rounded border border-slate-800 text-[11px] text-slate-300 overflow-x-auto">
+                          <BlockMath math={stage.math} />
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 align-top">
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          {stage.purpose}
+                        </p>
+                      </td>
+
+                      <td className="py-3.5 px-3 align-top text-center">
+                        {stageNum <= 4 ? (
+                          <button
+                            onClick={() => {
+                              setSelectedStage(stageNum);
+                              setViewMode('pipeline');
+                            }}
+                            className="text-[11px] px-2.5 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded font-medium transition-colors whitespace-nowrap"
+                          >
+                            Inspect
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 italic">Downstream</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-4 relative">
         <PipelineStage 
           num={0} 
           title="ADC Buffer" 
@@ -547,6 +727,8 @@ export const DSPPipelineSim: React.FC<{ socType: string }> = ({ socType }) => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

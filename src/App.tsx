@@ -19,6 +19,7 @@ export default function App() {
   const [writeMemAddr, setWriteMemAddr] = useState('');
   const [writeMemVal, setWriteMemVal] = useState('');
   const [showDocs, setShowDocs] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<string | undefined>(undefined);
   const [logFilter, setLogFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
 
   useEffect(() => {
@@ -181,7 +182,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-300 font-mono flex flex-col">
-      {showDocs && <DocViewer onClose={() => setShowDocs(false)} />}
+      {showDocs && (
+        <DocViewer 
+          onClose={() => {
+            setShowDocs(false);
+            setSelectedDoc(undefined);
+          }} 
+          initialDoc={selectedDoc} 
+        />
+      )}
       <header className="border-b border-slate-800 bg-slate-900/50 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="text-blue-500 w-6 h-6" />
@@ -209,7 +218,11 @@ export default function App() {
           </div>
 
           <button 
-            onClick={() => setShowDocs(true)}
+            id="open-docs-btn"
+            onClick={() => {
+              setSelectedDoc('dsp-pipeline-specification.md');
+              setShowDocs(true);
+            }}
             className="flex items-center gap-2 ml-4 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
           >
             <Book className="w-3.5 h-3.5" />
@@ -566,7 +579,13 @@ export default function App() {
               })()}
 
               <div className="lg:col-span-2">
-                <DSPPipelineSim socType={sim.mmu.socType} />
+                <DSPPipelineSim 
+                  socType={sim.mmu.socType} 
+                  onOpenDocs={(docName) => {
+                    setSelectedDoc(docName || 'dsp-pipeline-specification.md');
+                    setShowDocs(true);
+                  }}
+                />
               </div>
 
               <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden lg:col-span-2 flex flex-col">
