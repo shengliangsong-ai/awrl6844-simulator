@@ -45,8 +45,8 @@ memcheck: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(TARGET)
 
 clean:
-	@rm -f $(TARGET)
-	@echo "Cleaned build artifacts."
+	@rm -f $(TARGET) stage0_adc_trace.log stage1_fft_trace.log stage2_doppler_trace.log stage3_cfar_trace.log stage4_clustering_trace.log
+	@echo "Cleaned build artifacts and trace log files."
 
 help:
 	@echo "AWRL6844 BIST Build & Test Options:"

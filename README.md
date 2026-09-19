@@ -183,7 +183,25 @@ You can test individual stages or combinations of the 5-stage DSP pipeline direc
 
 ----------------------------------------------------------------------
 >>> BIST TEST SUITE RESULT: ALL ACTIVE STAGES PASSED (0x1F) <<<
+
+[TRACE LOG SUMMARY] Generated per-stage trace files in current directory:
+  - stage0_adc_trace.log        (256 I/Q ADC samples & parameters)
+  - stage1_fft_trace.log        (128 FFT range bin spectrum & peaks)
+  - stage2_doppler_trace.log    (16-bin Doppler spectrum & velocity)
+  - stage3_cfar_trace.log       (CFAR noise floor, SNR & detections)
+  - stage4_clustering_trace.log (3D cabin coordinates & seat assignments)
 ```
+
+#### Per-Stage Trace Log File Locations:
+When running `./bist_sim` with `--trace` (or `make run-trace`), detailed formatted log files are generated directly in the current working directory for offline analysis and hardware correlation:
+
+| File Name | Stage | Content Dumped |
+|---|---|---|
+| `stage0_adc_trace.log` | Stage 0 (ADC Synthesis) | Radar parameters, LFSR seed, all 256 complex I/Q samples with powers, CRC-32 |
+| `stage1_fft_trace.log` | Stage 1 (1D Range FFT) | HWA config, all 128 positive range bin powers, dB levels, and target peak markers |
+| `stage2_doppler_trace.log` | Stage 2 (2D Doppler FFT) | Velocity resolution, detected peak Doppler bins, and 16-bin Doppler spectrum slice |
+| `stage3_cfar_trace.log` | Stage 3 (CFAR-CA) | Guard/training cell configs, threshold factor, validated target point cloud table |
+| `stage4_clustering_trace.log` | Stage 4 (AoA & Clustering) | Cabin geometry model, Cartesian 3D $(x,y,z)$ coordinates, speed, and assigned vehicle seats |
 
 ---
 
